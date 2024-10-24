@@ -1,0 +1,24 @@
+{
+  "name": "hubs-browser",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@aps_sdk/authentication": "^1.0.0-beta.1",
+    "@aps_sdk/autodesk-sdkmanager": "^1.0.0-beta.2",
+    "@aps_sdk/data-management": "^0.1.0-beta.1",
+    "cookie-session": "^2.1.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1"
+  },
+  "devDependencies": {
+    "@types/forge-viewer": "^7.89.1"
+  }
+}
