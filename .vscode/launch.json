@@ -4,14 +4,51 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "Launch Server",
+            "name": "Launch Simple Viewer",
             "runtimeExecutable": "npm",
             "runtimeArgs": [
                 "start"
             ],
+            "cwd": "${workspaceFolder}/simple-viewer",
             "skipFiles": [
                 "<node_internals>/**/*.js"
             ]
-        }
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Hubs Browser",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "start"
+            ],
+            "cwd": "${workspaceFolder}/hubs-browser",
+            "skipFiles": [
+                "<node_internals>/**/*.js"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Design Automation",
+            "program": "${workspaceFolder}/designAutomationSample/start.js",
+            "cwd": "${workspaceFolder}/designAutomationSample",
+            "skipFiles": [
+                "<node_internals>/**/*.js"
+            ]
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Acc Administrator",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "start"
+            ],
+            "cwd": "${workspaceFolder}/acc-administrator",
+            "skipFiles": [
+                "<node_internals>/**/*.js"
+            ]
+        },
     ]
 }
