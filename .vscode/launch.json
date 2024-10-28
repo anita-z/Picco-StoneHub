@@ -50,5 +50,18 @@
                 "<node_internals>/**/*.js"
             ]
         },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch App Dashboard",
+            "runtimeExecutable": "npm",
+            "runtimeArgs": [
+                "start"
+            ],
+            "cwd": "${workspaceFolder}/app-dashboard",
+            "skipFiles": [
+                "<node_internals>/**/*.js"
+            ]
+        },
     ]
 }
