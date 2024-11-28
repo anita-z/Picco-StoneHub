@@ -60,7 +60,12 @@ export function initTree(selector, onSelectionChanged) {
         event.preventTreeDefault();
         const tokens = node.id.split('|');
         if (tokens[0] === 'version') {
+            console.log(tokens[1]);
             onSelectionChanged(tokens[1]);
+            console.log(node.parent);
+            console.log(node.id);
+            //TODO: use node.id as the html selector(data-uid) to select the model selected, then trace its parent name(item id)
+            // TODO: add all info to global models list
         }
     });
     return new InspireTreeDOM(tree, { target: selector });
