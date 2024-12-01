@@ -1,1 +1,1 @@
-export let globalSelectedModels = [];
+export let currentSelectedModels = [];

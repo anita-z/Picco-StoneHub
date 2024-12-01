@@ -1,3 +1,5 @@
+import * as globals from './globals.js';
+
 async function getJSON(url) {
     const resp = await fetch(url);
     if (!resp.ok) {
@@ -60,10 +62,63 @@ export function initTree(selector, onSelectionChanged) {
         event.preventTreeDefault();
         const tokens = node.id.split('|');
         if (tokens[0] === 'version') {
+            // onSelectionChanged(tokens[1]);
+
             console.log(tokens[1]);
+            // Extract the unique pattern for this model
+            // const match = tokens[1].match(/vf\.([a-zA-Z0-9]+)(?:\?|$)/);
+            const match = tokens[1].match(/vf\.(.*?)(?:\?|$)/);
+            const pattern = match ? match[1] : null;
+
+            if (pattern) {
+                console.log('Extracted Pattern:', pattern);
+
+                // Use the extracted pattern to find HTML elements
+                const itemNameElement = document.querySelector(`.title.icon.icon-item[data-uid*="${pattern}"]`);
+                const versionElement = document.querySelector(`.title.icon.icon-version[data-uid*="${pattern}"]`);                
+
+                console.log(itemNameElement);
+                console.log(versionElement);
+
+                // Get the text content of the elements
+                const itemName = itemNameElement ? itemNameElement.textContent.trim() : null;
+                const version = versionElement ? versionElement.textContent.trim() : null;
+
+                console.log(itemName);
+                console.log(version);
+
+                if (itemName && version) {
+                    // onSelectionChanged(tokens[1]);
+                    const modelURN = window.btoa(tokens[1]).replace(/=/g, '');
+                    globals.currentSelectedModels.push({
+                        itemName,
+                        version,
+                        modelURN
+                    });
+
+                } else {
+                    console.error("Item name and version Info not found for this model.");
+                }                
+            } else {
+                console.error('Unique Pattern not found for this model.');
+            }
+
             onSelectionChanged(tokens[1]);
-            console.log(node.parent);
-            console.log(node.id);
+            // <a class="title icon icon-item" data-uid="item|b.e2a39e02-d6bb-4fa7-80f4-92fb2ced9a76|b.6488a13f-dfda-4743-b193-d39e46c8f50d|urn:adsk.wipprod:dm.lineage:WG3IlN7NRfKR7x43hf7Ksg" tabindex="1" unselectable="on"></a>
+            // console.log(node.parent);
+            // console.log(node.id);
+            // node.id: version|urn:adsk.wipprod:fs.file:vf.WG3IlN7NRfKR7x43hf7Ksg?version=1
+            // tokens[1]: urn:adsk.wipprod:fs.file:vf.WG3IlN7NRfKR7x43hf7Ksg?version=1
+
+            // <a class="title icon icon-item" data-uid="item|b.e2a39e02-d6bb-4fa7-80f4-92fb2ced9a76|b.6488a13f-dfda-4743-b193-d39e46c8f50d|urn:adsk.wipprod:dm.lineage:WG3IlN7NRfKR7x43hf7Ksg" tabindex="1" unselectable="on">DACH_sample_project.rvt</a>
+
+            // const encodedUrn = tokens[1].split('?')[0];
+            // const targetElements = document.querySelectorAll(`[data-uid*="${encodedUrn}"]`);
+
+            // targetElements.forEach(element => {
+            //     console.log('Element Name:', element.textContent.trim());
+            // });
+
             //TODO: use node.id as the html selector(data-uid) to select the model selected, then trace its parent name(item id)
             // TODO: add all info to global models list
         }

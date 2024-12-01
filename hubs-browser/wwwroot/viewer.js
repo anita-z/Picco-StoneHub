@@ -3,8 +3,7 @@ import './extensions/SummaryExtension.js';
 import './extensions/HistogramExtension.js';
 import './extensions/DataGridExtension.js';
 import './extensions/ModelChecklistExtension.js';
-import { globalSelectedModels } from './globals.js';
-
+import * as globals from './globals.js';
 
 async function getAccessToken(callback) {
     try {
@@ -45,9 +44,9 @@ export function loadModel(viewer, urn) {
     // console.log(urn);
     //TODO: here global model list should have all info, including name and urn
     //TODO: set checklist panel to visible and load all models from checklist panel
-    globalSelectedModels.push( {urn} )
+    // globalSelectedModels.push( {urn} )
 
-    console.log(globalSelectedModels);
+    console.log(globals.currentSelectedModels);
 
     if (viewer.getExtension("ModelChecklistExtension")._panel &&
         viewer.getExtension("ModelChecklistExtension")._panel.isVisible()) {

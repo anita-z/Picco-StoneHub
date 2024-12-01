@@ -1,5 +1,6 @@
 import { initViewer, loadModel } from './viewer.js';
 import { initTree } from './sidebar.js';
+import * as globals from './globals.js';
 
 const login = document.getElementById('login');
 try {
@@ -19,6 +20,13 @@ try {
         }
         const viewer = await initViewer(document.getElementById('preview'));
         initTree('#tree', (id) => loadModel(viewer, window.btoa(id).replace(/=/g, '')));
+        // initTree('#tree', (id) => {
+        //     const modelURN = window.btoa(id).replace(/=/g, '');
+        //     globals.currentModelURN = modelURN;
+        //     // Load the model
+        //     loadModel(viewer, modelURN);
+        // });
+        
     } else {
         login.innerText = 'Login';
         login.onclick = () => window.location.replace('/api/auth/login');
