@@ -1,3 +1,5 @@
+import * as globals from '../globals.js';
+
 // Checklist Panel Class
 export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
     constructor(extension, id, title, options) {
@@ -26,26 +28,60 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
         this.setupModelSelection();
     }
 
-    addChecklistItem(id, label, urn) {
+    // addChecklistItem(id, label, urn) {
+    //     const checkbox = document.createElement('input');
+    //     checkbox.type = 'checkbox';
+    //     checkbox.id = id;
+    //     checkbox.dataset.urn = urn;
+
+    //     const checkboxLabel = document.createElement('label');
+    //     checkboxLabel.htmlFor = id;
+    //     checkboxLabel.textContent = label;
+
+    //     const div = document.createElement('div');
+    //     div.style.margin = '10px';
+    //     div.appendChild(checkbox);
+    //     div.appendChild(checkboxLabel);
+
+    //     this.checklistContainer.appendChild(div);
+    //     this.models.push({ id, label, urn, checkbox });
+    // }
+
+    addChecklistItem(id, itemName, urn, version) {
+        // TODO: add classname
+        // Create the checkbox
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.id = id;
         checkbox.dataset.urn = urn;
-
+    
+        // Create the label for the checkbox
         const checkboxLabel = document.createElement('label');
         checkboxLabel.htmlFor = id;
-        checkboxLabel.textContent = label;
-
+        checkboxLabel.textContent = itemName;
+    
+        // Create the version note
+        const versionNote = document.createElement('div');
+        versionNote.style.fontSize = '0.9em';
+        versionNote.style.color = '#666';
+        versionNote.textContent = `Version: ${version}`;
+    
+        // Create the container for the checklist item
         const div = document.createElement('div');
         div.style.margin = '10px';
         div.appendChild(checkbox);
         div.appendChild(checkboxLabel);
-
+        div.appendChild(versionNote); // Append the version note
+    
+        // Append the container to the checklist
         this.checklistContainer.appendChild(div);
-        this.models.push({ id, label, urn, checkbox });
+    
+        // Save the item details in the models array
+        this.models.push({ id, itemName, urn, version, checkbox });
     }
-
+    
     addButton(label, callback) {
+        // TODO: add classname
         const button = document.createElement('button');
         button.textContent = label;
         button.style.margin = '0px';
@@ -66,14 +102,17 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
     async setupModelSelection() {
         try {
             //TODO: get models from global model list
-            const resp = await fetch('/api/models');
-            if (!resp.ok) {
-                throw new Error(await resp.text());
-            }
-            const models = await resp.json();
+            // const resp = await fetch('/api/models');
+            // if (!resp.ok) {
+            //     throw new Error(await resp.text());
+            // }
+            // const models = await resp.json();
 
-            models.forEach(model => {
-                this.addChecklistItem(model.urn, model.name, model.urn);
+            // const models = globals.currentSelectedModels;
+
+            // console.log(models);
+            globals.currentSelectedModels.forEach(model => {
+                this.addChecklistItem(model.pattern, model.itemName, model.modelURN, model.version);
             });
 
             this.addButton('Load Selected Models', () => {

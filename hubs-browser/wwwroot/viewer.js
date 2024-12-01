@@ -42,7 +42,6 @@ export function initViewer(container) {
 // TODO: need to modify this function to handle combine models
 export function loadModel(viewer, urn) {
     // console.log(urn);
-    //TODO: here global model list should have all info, including name and urn
     //TODO: set checklist panel to visible and load all models from checklist panel
     // globalSelectedModels.push( {urn} )
 
