@@ -34,20 +34,20 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
         checkbox.type = 'checkbox';
         checkbox.id = id;
         checkbox.dataset.urn = urn;
-        checkbox.classList.add('item-checkbox', `${id}`);
+        checkbox.classList.add('item-checkbox', `${id}`, `${version}`);
 
         // Create the label for the checkbox
         const checkboxLabel = document.createElement('label');
         checkboxLabel.htmlFor = id;
         checkboxLabel.textContent = itemName;
-        checkboxLabel.classList.add('checkbox-label', `${id}`);
+        checkboxLabel.classList.add('checkbox-label', `${id}`, `${version}`);
 
         // Create the version note
         const versionNote = document.createElement('div');
         versionNote.style.fontSize = '0.9em';
         versionNote.style.color = '#666';
         versionNote.textContent = `Version: ${version}`;
-        versionNote.classList.add('item-version', `${id}`);
+        versionNote.classList.add('item-version', `${id}`, `${version}`);
 
         // Create the container for the checklist item
         const div = document.createElement('div');
@@ -55,7 +55,7 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
         div.appendChild(checkbox);
         div.appendChild(checkboxLabel);
         div.appendChild(versionNote);
-        div.classList.add('checklist-title-wrap', `${id}`);
+        div.classList.add('checklist-title-wrap', `${id}`, `${version}`);
 
         // Append the container to the checklist
         this.checklistContainer.appendChild(div);
@@ -107,6 +107,7 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
                 if (userChoice) {
                     this.models.length = 0;
                     globals.currentSelectedModels.length = 0;
+                    this.update();
                 }
             })
 
@@ -193,13 +194,23 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
         }
     }
 
-    // TODO: update from this.models and globals.selectedmodels
     update() {
-        const loadedModels = this.extension.viewer.impl.modelQueue().getModels();
+        if (this.models.length === 0 && globals.currentSelectedModels.length === 0) {
+            // Clear all content of model checklist
+            const container = document.querySelector('.modelchecklist-container');
+            if (container) {
+                container.innerHTML = ''; 
+            }
+            return;
+        }
 
+        const loadedModels = this.extension.viewer.impl.modelQueue().getModels();
         loadedModels.forEach(model => {
-            const loadedModelUrn = model.getData().urn;
-            const matchedModel = this.models.find(item => loadedModelUrn === item.urn);
+            // Manually modify urn: replace "_" with "/" due to different annotations
+            const loadedModelUrn = model.getData().urn.replace(/_/g, "/");;
+
+            const matchedModel = this.models.find(item =>
+                loadedModelUrn === item.urn);
             if (matchedModel) {
                 matchedModel.checkbox.checked = true;
             }

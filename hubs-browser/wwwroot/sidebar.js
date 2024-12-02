@@ -79,9 +79,7 @@ export function initTree(selector, onSelectionChanged) {
                 const version = versionElement ? versionElement.textContent.trim() : null;
 
                 const modelURN = window.btoa(tokens[1]).replace(/=/g, '');
-                const exists = globals.currentSelectedModels.some(entry =>
-                    entry.pattern === pattern && entry.version === version
-                );
+                const exists = globals.currentSelectedModels.some(entry => entry.modelURN === modelURN);
 
                 if (!exists) {
                     if (itemName && version) {
