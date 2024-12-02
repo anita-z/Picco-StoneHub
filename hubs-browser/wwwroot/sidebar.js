@@ -62,45 +62,44 @@ export function initTree(selector, onSelectionChanged) {
         event.preventTreeDefault();
         const tokens = node.id.split('|');
         if (tokens[0] === 'version') {
-
             console.log(tokens[1]);
-            // Extract the unique pattern for this model
+            // Extract the unique pattern for this model, i.e. everything between "vf." and "?version"
             const match = tokens[1].match(/vf\.(.*?)(?:\?|$)/);
             const pattern = match ? match[1] : null;
+            // Extract everything after "vf."
+            const versionInfo = tokens[1].split("vf.")[1];
 
             if (pattern) {
-                console.log('Extracted Pattern:', pattern);
-
                 // Use the extracted pattern to find HTML elements
                 const itemNameElement = document.querySelector(`.title.icon.icon-item[data-uid*="${pattern}"]`);
-                const versionElement = document.querySelector(`.title.icon.icon-version[data-uid*="${pattern}"]`);                
-
-                console.log(itemNameElement);
-                console.log(versionElement);
+                const versionElement = document.querySelector(`.title.icon.icon-version[data-uid*="${versionInfo}"]`);
 
                 // Get the text content of the elements
                 const itemName = itemNameElement ? itemNameElement.textContent.trim() : null;
                 const version = versionElement ? versionElement.textContent.trim() : null;
 
-                console.log(itemName);
-                console.log(version);
+                const modelURN = window.btoa(tokens[1]).replace(/=/g, '');
+                const exists = globals.currentSelectedModels.some(entry =>
+                    entry.pattern === pattern && entry.version === version
+                );
 
-                if (itemName && version) {
-                    const modelURN = window.btoa(tokens[1]).replace(/=/g, '');
-                    globals.currentSelectedModels.push({
-                        itemName,
-                        version,
-                        modelURN,
-                        pattern
-                    });
-
-                } else {
-                    console.error("Item name and version Info not found for this model.");
-                }                
+                if (!exists) {
+                    if (itemName && version) {
+                        globals.currentSelectedModels.push({
+                            itemName,
+                            version,
+                            modelURN,
+                            pattern
+                        });
+                    } else {
+                        console.error("Item name and version Info not found for this model.");
+                    }
+                }
             } else {
                 console.error('Unique Pattern not found for this model.');
             }
 
+            console.log(globals.currentSelectedModels);
             onSelectionChanged(tokens[1]);
         }
     });

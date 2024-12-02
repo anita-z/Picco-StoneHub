@@ -11,7 +11,6 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
         this.container.style.height = (options.height || 400) + 'px';
         this.container.style.resize = 'auto';
         this.container.style.backgroundColor = 'white';
-        this.models = [];
     }
 
     initialize() {
@@ -25,74 +24,71 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
         this.container.appendChild(this.content);
         this.checklistContainer = this.content.querySelector('.modelchecklist-container');
 
+        this.models = [];
         this.setupModelSelection();
     }
 
-    // addChecklistItem(id, label, urn) {
-    //     const checkbox = document.createElement('input');
-    //     checkbox.type = 'checkbox';
-    //     checkbox.id = id;
-    //     checkbox.dataset.urn = urn;
-
-    //     const checkboxLabel = document.createElement('label');
-    //     checkboxLabel.htmlFor = id;
-    //     checkboxLabel.textContent = label;
-
-    //     const div = document.createElement('div');
-    //     div.style.margin = '10px';
-    //     div.appendChild(checkbox);
-    //     div.appendChild(checkboxLabel);
-
-    //     this.checklistContainer.appendChild(div);
-    //     this.models.push({ id, label, urn, checkbox });
-    // }
-
     addChecklistItem(id, itemName, urn, version) {
-        // TODO: add classname
         // Create the checkbox
         const checkbox = document.createElement('input');
         checkbox.type = 'checkbox';
         checkbox.id = id;
         checkbox.dataset.urn = urn;
-    
+        checkbox.classList.add('item-checkbox', `${id}`);
+
         // Create the label for the checkbox
         const checkboxLabel = document.createElement('label');
         checkboxLabel.htmlFor = id;
         checkboxLabel.textContent = itemName;
-    
+        checkboxLabel.classList.add('checkbox-label', `${id}`);
+
         // Create the version note
         const versionNote = document.createElement('div');
         versionNote.style.fontSize = '0.9em';
         versionNote.style.color = '#666';
         versionNote.textContent = `Version: ${version}`;
-    
+        versionNote.classList.add('item-version', `${id}`);
+
         // Create the container for the checklist item
         const div = document.createElement('div');
         div.style.margin = '10px';
         div.appendChild(checkbox);
         div.appendChild(checkboxLabel);
-        div.appendChild(versionNote); // Append the version note
-    
+        div.appendChild(versionNote);
+        div.classList.add('checklist-title-wrap', `${id}`);
+
         // Append the container to the checklist
         this.checklistContainer.appendChild(div);
-    
+
         // Save the item details in the models array
         this.models.push({ id, itemName, urn, version, checkbox });
     }
-    
-    addButton(label, callback) {
-        // TODO: add classname
+
+    addButton(label, usage, callback) {
+        // Create the button
         const button = document.createElement('button');
         button.textContent = label;
-        button.style.margin = '0px';
-        button.style.width = '35%';
-        button.style.right = '10px';
-        button.style.bottom = '20px';
-        button.style.position = "absolute";
+        button.style.margin = '15px';
+        button.style.width = '45%';
+        button.style.position = "relative";
         button.onclick = callback;
+        button.classList.add(`${usage}-button`);
 
-        this.checklistContainer.appendChild(button);
-        this.checklistContainer.style.position = 'relative';
+        // Check if a button container exists; if not, create one
+        let buttonContainer = this.checklistContainer.querySelector('.button-container');
+        if (!buttonContainer) {
+            buttonContainer = document.createElement('div');
+            buttonContainer.classList.add('button-container');
+            buttonContainer.style.display = 'flex';
+            buttonContainer.style.justifyContent = 'space-between';
+            buttonContainer.style.position = 'absolute';
+            buttonContainer.style.bottom = '15px';
+            buttonContainer.style.width = '100%';
+            this.checklistContainer.appendChild(buttonContainer);
+        }
+
+        // Append the button to the button container
+        buttonContainer.appendChild(button);
     }
 
     getSelectedModels() {
@@ -101,24 +97,25 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
 
     async setupModelSelection() {
         try {
-            //TODO: get models from global model list
-            // const resp = await fetch('/api/models');
-            // if (!resp.ok) {
-            //     throw new Error(await resp.text());
-            // }
-            // const models = await resp.json();
-
-            // const models = globals.currentSelectedModels;
-
-            // console.log(models);
             globals.currentSelectedModels.forEach(model => {
                 this.addChecklistItem(model.pattern, model.itemName, model.modelURN, model.version);
             });
 
-            this.addButton('Load Selected Models', () => {
+            this.addButton('Clear All Models', "clear", () => {
+                const userChoice = confirm("Are you sure to clear all models in the checklist?");
+                // If user answers yes, clear the checklist and global selected models
+                if (userChoice) {
+                    this.models.length = 0;
+                    globals.currentSelectedModels.length = 0;
+                }
+            })
+
+            this.addButton('Load Selected Models', "load", () => {
                 const selectedModels = this.getSelectedModels();
                 this.loadSelectedModels(selectedModels);
             });
+
+
         } catch (err) {
             alert('Could not list models. See the console for more details.');
             console.error(err);
@@ -169,7 +166,6 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
             loadedModels.forEach(model => {
                 this.extension.viewer.impl.unloadModel(model);
                 console.log(`Unloaded model: ${model.id}`);
-                // console.log(model);
             });
 
             this.extension.viewer.impl.invalidate(true, true, true);
@@ -197,6 +193,7 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
         }
     }
 
+    // TODO: update from this.models and globals.selectedmodels
     update() {
         const loadedModels = this.extension.viewer.impl.modelQueue().getModels();
 

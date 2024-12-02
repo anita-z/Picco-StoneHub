@@ -39,19 +39,12 @@ export function initViewer(container) {
     });
 }
 
-// TODO: need to modify this function to handle combine models
 export function loadModel(viewer, urn) {
-    // console.log(urn);
-    //TODO: set checklist panel to visible and load all models from checklist panel
-    // globalSelectedModels.push( {urn} )
+    // if (viewer.getExtension("ModelChecklistExtension")._panel &&
+    //     viewer.getExtension("ModelChecklistExtension")._panel.isVisible()) {
+    //         // viewer.getExtension("ModelChecklistExtension")._panel.setVisible(true);
 
-    console.log(globals.currentSelectedModels);
-
-    if (viewer.getExtension("ModelChecklistExtension")._panel &&
-        viewer.getExtension("ModelChecklistExtension")._panel.isVisible()) {
-            // viewer.getExtension("ModelChecklistExtension")._panel.setVisible(true);
-
-    }
+    // }
 
     function onDocumentLoadSuccess(doc) {
         viewer.loadDocumentNode(doc, doc.getRoot().getDefaultGeometry());
