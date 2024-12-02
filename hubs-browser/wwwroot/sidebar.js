@@ -1,3 +1,5 @@
+import * as globals from './globals.js';
+
 async function getJSON(url) {
     const resp = await fetch(url);
     if (!resp.ok) {
@@ -60,6 +62,42 @@ export function initTree(selector, onSelectionChanged) {
         event.preventTreeDefault();
         const tokens = node.id.split('|');
         if (tokens[0] === 'version') {
+            console.log(tokens[1]);
+            // Extract the unique pattern for this model, i.e. everything between "vf." and "?version"
+            const match = tokens[1].match(/vf\.(.*?)(?:\?|$)/);
+            const pattern = match ? match[1] : null;
+            // Extract everything after "vf."
+            const versionInfo = tokens[1].split("vf.")[1];
+
+            if (pattern) {
+                // Use the extracted pattern to find HTML elements
+                const itemNameElement = document.querySelector(`.title.icon.icon-item[data-uid*="${pattern}"]`);
+                const versionElement = document.querySelector(`.title.icon.icon-version[data-uid*="${versionInfo}"]`);
+
+                // Get the text content of the elements
+                const itemName = itemNameElement ? itemNameElement.textContent.trim() : null;
+                const version = versionElement ? versionElement.textContent.trim() : null;
+
+                const modelURN = window.btoa(tokens[1]).replace(/=/g, '');
+                const exists = globals.currentSelectedModels.some(entry => entry.modelURN === modelURN);
+
+                if (!exists) {
+                    if (itemName && version) {
+                        globals.currentSelectedModels.push({
+                            itemName,
+                            version,
+                            modelURN,
+                            pattern
+                        });
+                    } else {
+                        console.error("Item name and version Info not found for this model.");
+                    }
+                }
+            } else {
+                console.error('Unique Pattern not found for this model.');
+            }
+
+            console.log(globals.currentSelectedModels);
             onSelectionChanged(tokens[1]);
         }
     });
