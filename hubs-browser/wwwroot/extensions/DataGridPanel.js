@@ -1,16 +1,35 @@
 const DATAGRID_CONFIG = {
-    requiredProps: ['name', 'Volume', 'Level'], // Which properties should be requested for each object
+    requiredProps: ['name', 'Volume', 'Level', 'Weight', 'Comments', 'Cavity'], // Which properties should be requested for each object
     columns: [ // Definition of individual grid columns (see http://tabulator.info for more details)
         { title: 'ID', field: 'dbid' },
         { title: 'Name', field: 'name', width: 150 },
         { title: 'Volume', field: 'volume', hozAlign: 'left', formatter: 'progress' },
-        { title: 'Level', field: 'level' }
+        { title: 'Level', field: 'level' },
+        {
+            // comments sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
+            title: 'Comments', field: 'comments', sorter: function (a, b) {
+                //a, b - the two values being compared
+                const partsA = a.slice(1).split('-');
+                const partsB = b.slice(1).split('-');
+                partsA.map(part => Number(part));
+                partsB.map(part => Number(part));
+                
+                return (partsA[0] === partsB[0]) ? partsA[1] - partsB[1] : partsA[0] - partsB[0];
+            },
+        },
+        { title: 'Weight', field: 'weight' },
+        { title: 'Cavity', field: 'cavity' },
     ],
     groupBy: 'level', // Optional column to group by
     createRow: (dbid, name, props) => { // Function generating grid rows based on recieved object properties
         const volume = props.find(p => p.displayName === 'Volume')?.displayValue;
         const level = props.find(p => p.displayName === 'Level' && p.displayCategory === 'Constraints')?.displayValue;
-        return { dbid, name, volume, level };
+        const comments = props.find(p => p.displayName === 'Comments')?.displayValue;
+        const weightProp = props.find(p => p.displayName === 'Weight');
+        const weight = weightProp ? weightProp.displayValue.toString() + weightProp.units : undefined;
+        const cavity = props.find(p => p.displayName === 'Cavity')?.displayValue;
+
+        return { dbid, name, volume, level, comments, weight, cavity };
     },
     onRowClick: (row, viewer) => {
         viewer.isolate([row.dbid]);
@@ -24,9 +43,9 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         this.extension = extension;
         this.container.style.left = (options.x || 0) + 'px';
         this.container.style.top = (options.y || 0) + 'px';
-        this.container.style.width = (options.width || 500) + 'px';
+        this.container.style.width = (options.width || 800) + 'px';
         this.container.style.height = (options.height || 400) + 'px';
-        this.container.style.resize = 'none';
+        this.container.style.resize = 'auto';
     }
 
     initialize() {
@@ -50,7 +69,8 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
     update(model, dbids) {
         model.getBulkProperties(dbids, { propFilter: DATAGRID_CONFIG.requiredProps }, (results) => {
-            this.table.replaceData(results.map((result) => DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties)));
+            this.table.replaceData(results.map((result) =>
+                DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties)));
         }, (err) => {
             console.error(err);
         });
