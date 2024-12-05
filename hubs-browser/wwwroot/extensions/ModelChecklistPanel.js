@@ -102,13 +102,27 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
             });
 
             this.addButton('Clear All Models', "clear", () => {
-                const userChoice = confirm("Are you sure to clear all models in the checklist?");
                 // If user answers yes, clear the checklist and global selected models
-                if (userChoice) {
-                    this.models.length = 0;
-                    globals.currentSelectedModels.length = 0;
-                    this.update();
-                }
+                Swal.fire({
+                    text: 'Are you sure to clear all models in the checklist?',
+                    icon: "question",
+                    // showDenyButton: true,
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes',
+                    // denyButtonText: 'No',
+                    customClass: {
+                        actions: 'my-actions',
+                        cancelButton: 'order-1 right-gap',
+                        confirmButton: 'order-2',
+                        // denyButton: 'order-3',
+                    },
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        this.models.length = 0;
+                        globals.currentSelectedModels.length = 0;
+                        this.update();
+                    }
+                });
             })
 
             this.addButton('Load Selected Models', "load", () => {
@@ -199,7 +213,7 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
             // Clear all content of model checklist
             const container = document.querySelector('.modelchecklist-container');
             if (container) {
-                container.innerHTML = ''; 
+                container.innerHTML = '';
             }
             return;
         }
