@@ -100,7 +100,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                     const param = document.getElementById('param-select').value;
                     const compare = document.getElementById('compare-select').value;
                     const value = document.getElementById('value-input').value;
-            
+
                     if (!param) {
                         Swal.showValidationMessage('Please select a parameter');
                         return null;
@@ -113,33 +113,17 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                         Swal.showValidationMessage('Please enter a valid threshold');
                         return null;
                     }
-            
+
                     return { param, compare, value };
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
                     const { param, compare, value } = result.value;
-                    Swal.fire(`Filter set to: ${param} ${compare} ${value}`);
+                    // Apply the filter to the table
+                    this.table.setFilter(param, compare, value);
+                    Swal.fire(`Currently showing entries: ${param} ${compare} ${value}`);
                 }
             });
-
-            // // Prompt for user input
-            // const userName = prompt("What is your name?");
-            // if (userName) {
-            //     alert(`Hello, ${userName}!`);
-            // } else {
-            //     alert("You didn't provide a name.");
-            // }
-
-            this.table.on("dataFiltered", function (filters, rows) {
-                [
-                    {field:"age", type:">", value:52}, //filter by age greater than 52
-                    {field:"height", type:"<", value:142}, //and by height less than 142
-                ]
-                //filters - array of filters currently applied
-                //rows - array of row components that pass the filters
-            });
-
         });
     }
 
