@@ -1,3 +1,5 @@
+/// import * as Autodesk from "@types/forge-viewer";
+
 export class BaseExtension extends Autodesk.Viewing.Extension {
     constructor(viewer, options) {
         super(viewer, options);
@@ -17,6 +19,13 @@ export class BaseExtension extends Autodesk.Viewing.Extension {
         this.viewer.removeEventListener(Autodesk.Viewing.OBJECT_TREE_CREATED_EVENT, this._onObjectTreeCreated);
         this.viewer.removeEventListener(Autodesk.Viewing.SELECTION_CHANGED_EVENT, this._onSelectionChanged);
         this.viewer.removeEventListener(Autodesk.Viewing.ISOLATE_EVENT, this._onIsolationChanged);
+        return true;
+    }
+
+    activate() {
+        super.activate();
+        // this._button?.setState(Autodesk.Viewing.UI.Button.State.ACTIVE);
+        this.activeStatus = true;
         return true;
     }
 

@@ -1,6 +1,23 @@
 import { initViewer, loadModel } from './viewer.js';
 import { initTree } from './sidebar.js';
 import * as globals from './globals.js';
+import './extensions/LoggerExtension.js';
+import './extensions/SummaryExtension.js';
+import './extensions/HistogramExtension.js';
+import './extensions/DataGridExtension.js';
+import './extensions/ModelChecklistExtension.js';
+import './extensions/HeatmapExtension.js';
+
+const EXTENSIONS = [
+    'Autodesk.DocumentBrowser',
+    'LoggerExtension',
+    'SummaryExtension',
+    'HistogramExtension',
+    'DataGridExtension',
+    'ModelChecklistExtension',
+    'HeatmapExtension',
+    'Autodesk.AEC.LevelsExtension'
+];
 
 const login = document.getElementById('login');
 try {
@@ -18,8 +35,23 @@ try {
                 document.body.removeChild(iframe);
             };
         }
-        const viewer = await initViewer(document.getElementById('preview'));
+        const viewer = await initViewer(document.getElementById('preview'), EXTENSIONS);
         initTree('#tree', (id) => loadModel(viewer, window.btoa(id).replace(/=/g, '')));
+
+        viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, async () => {
+            // Configure and activate our custom extensions
+            const extensions = [
+                'LoggerExtension',
+                'SummaryExtension',
+                'HistogramExtension',
+                'DataGridExtension',
+                'ModelChecklistExtension',
+                'HeatmapExtension'
+            ].map(id => viewer.getExtension(id));
+            for (const ext of extensions) {
+                ext.activate();
+            }
+        });
     } else {
         login.innerText = 'Login';
         login.onclick = () => window.location.replace('/api/auth/login');

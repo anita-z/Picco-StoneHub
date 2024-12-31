@@ -3,6 +3,7 @@ import './extensions/SummaryExtension.js';
 import './extensions/HistogramExtension.js';
 import './extensions/DataGridExtension.js';
 import './extensions/ModelChecklistExtension.js';
+import './extensions/HeatmapExtension.js';
 import * as globals from './globals.js';
 
 async function getAccessToken(callback) {
@@ -18,6 +19,8 @@ async function getAccessToken(callback) {
     }
 }
 
+/*
+// old method:
 export function initViewer(container) {
     return new Promise(function (resolve, reject) {
         Autodesk.Viewing.Initializer({ env: 'AutodeskProduction', getAccessToken }, function () {
@@ -29,6 +32,7 @@ export function initViewer(container) {
                     'HistogramExtension',
                     'DataGridExtension',
                     'ModelChecklistExtension',
+                    // 'HeatmapExtension',
                 ]
             };
             const viewer = new Autodesk.Viewing.GuiViewer3D(container, config);
@@ -38,14 +42,21 @@ export function initViewer(container) {
         });
     });
 }
+*/
+
+
+export function initViewer(container, extensions) {
+    return new Promise(function (resolve, reject) {
+        Autodesk.Viewing.Initializer({ env: 'AutodeskProduction', getAccessToken }, function () {
+            const viewer = new Autodesk.Viewing.GuiViewer3D(container, { extensions });
+            viewer.start();
+            viewer.setTheme('light-theme');
+            resolve(viewer);
+        });
+    });
+}
 
 export function loadModel(viewer, urn) {
-    // if (viewer.getExtension("ModelChecklistExtension")._panel &&
-    //     viewer.getExtension("ModelChecklistExtension")._panel.isVisible()) {
-    //         // viewer.getExtension("ModelChecklistExtension")._panel.setVisible(true);
-
-    // }
-
     function onDocumentLoadSuccess(doc) {
         viewer.loadDocumentNode(doc, doc.getRoot().getDefaultGeometry());
     }
