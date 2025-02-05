@@ -46,15 +46,6 @@ const DATAGRID_CONFIG = {
         {
             // comments sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
             title: 'Comments', field: 'comments', sorter: piccoNumSorter
-            // function (a, b) {
-            //     //a, b - the two values being compared
-            //     const partsA = a.slice(1).split('-');
-            //     const partsB = b.slice(1).split('-');
-            //     partsA.map(part => Number(part));
-            //     partsB.map(part => Number(part));
-
-            //     return (partsA[0] === partsB[0]) ? partsA[1] - partsB[1] : partsA[0] - partsB[0];
-            // },
         },
         { title: 'Weight', field: 'weight' },
         { title: 'Cavity', field: 'cavity' },
@@ -115,132 +106,214 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             Swal.fire("Filter cleared!", "", "success");
         });
 
-        this.addButton("Set Filter", "set-filter", () => {
-            Swal.fire({
-                title: "Define Advanced Filter",
-                icon: "info",
-                html: `
-                    <div style="text-align: left; font-family: Arial, sans-serif; color: #333;">
+        this.addButton("Set Filter", "set-filter", this.defineAdvancedFilter.bind(this));
+    }
+
+    defineAdvancedFilter() {
+        let parameters = [
+            { param: "", compare: "", numberVal: "", stringVal: "", stringOptions: [] } // Initial parameter set
+        ];
+
+        const renderParameterSets = () => {
+            const container = document.getElementById("filter-container");
+            container.innerHTML = ""; // Clear existing content
+
+            console.log("parameters", parameters);
+            parameters.forEach((paramSet, index) => {
+                const parameterHTML = `
+                    <div class="parameter-set" style="margin-bottom: 15px;" data-index="${index}">
                         <div style="margin-bottom: 15px;">
-                            <label for="param-select" style="font-weight: bold; display: block; margin-bottom: 5px;">Choose a parameter:</label>
-                            <select id="param-select" class="swal2-select" style="width: 80%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;" onchange="handleParameterSelection()">
+                            <label for="param-select-${index}" style="font-weight: bold; display: block; margin-bottom: 5px;">Choose a parameter:</label>
+                            <select id="param-select-${index}" class="param-select swal2-select" style="width: 80%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;">
                                 <option value="">--Select--</option>
-                                <option value="volume">Volume</option>
-                                <option value="weight">Weight</option>
-                                <option value="cavity">Cavity</option>
-                                <option value="comments">Comments</option>
-                                <option value="shipping_status">Shipping Status</option>
+                                <option value="volume" ${paramSet.param === "volume" ? "selected" : ""}>Volume</option>
+                                <option value="weight" ${paramSet.param === "weight" ? "selected" : ""}>Weight</option>
+                                <option value="cavity" ${paramSet.param === "cavity" ? "selected" : ""}>Cavity</option>
+                                <option value="comments" ${paramSet.param === "comments" ? "selected" : ""}>Comments</option>
+                                <option value="shipping_status" ${paramSet.param === "shipping_status" ? "selected" : ""}>Shipping Status</option>
                             </select>
                         </div>
-        
                         <div style="margin-bottom: 15px;">
-                            <label for="compare-select" style="font-weight: bold; display: block; margin-bottom: 5px;">Choose a comparison:</label>
-                            <select id="compare-select" class="swal2-select" style="width: 80%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;">
+                            <label for="compare-select-${index}" style="font-weight: bold; display: block; margin-bottom: 5px;">Choose a comparison:</label>
+                            <select id="compare-select-${index}" class="compare-select swal2-select" style="width: 80%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;">
                                 <option value="">--Select--</option>
-                                <option value="=">Equal To</option>
-                                <option value=">">Greater Than</option>
-                                <option value="<">Less Than</option>
+                                <option value="=" ${paramSet.compare === "=" ? "selected" : ""}>Equal To</option>
+                                <option value=">" ${paramSet.compare === ">" ? "selected" : ""}>Greater Than</option>
+                                <option value="<" ${paramSet.compare === "<" ? "selected" : ""}>Less Than</option>
                             </select>
                         </div>
-        
-                        <div id="number-input-container" style="display: none; margin-bottom: 15px;">
-                            <label for="number-input" style="font-weight: bold; display: block; margin-bottom: 5px;">Value:</label>
-                            <input type="number" id="number-input" class="swal2-input" placeholder="Enter a threshold" style="width: 80%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;" />
+                        <div id="number-input-container-${index}" style="display: ${paramSet.numberVal ? 'block' : 'none'}; margin-bottom: 15px;">
+                            <label for="number-input-${index}" style="font-weight: bold; display: block; margin-bottom: 5px;">Value:</label>
+                            <input type="number" id="number-input-${index}" class="swal2-input" placeholder="Enter a threshold" style="width: 80%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;" value="${paramSet.numberVal}" />
                         </div>
-        
-                        <div id="string-input-container" style="display: none; margin-bottom: 15px;">
-                            <label for="string-select" style="font-weight: bold; display: block; margin-bottom: 5px;">Value:</label>
-                            <select id="string-select" class="swal2-select" style="width: 80%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;">
+                        <div id="string-input-container-${index}" style="display: ${paramSet.stringVal || paramSet.stringOptions.length ? 'block' : 'none'}; margin-bottom: 15px;">
+                            <label for="string-select-${index}" style="font-weight: bold; display: block; margin-bottom: 5px;">Value:</label>
+                            <select id="string-select-${index}" class="swal2-select" style="width: 80%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; font-size: 14px;">
                             </select>
                         </div>
+                        <button type="button" class="swal2-cancel swal2-styled" style="background-color: #e74c3c; margin-top: 5px; font-size: 13px;" id="remove-button-${index}">Remove Above Parameter Set</button>
                     </div>
-                `,
-                showCancelButton: true,
-                confirmButtonText: "Apply",
-                cancelButtonText: "Cancel",
-                didOpen: function () {
-                    // Capture 'this' in a variable
-                    const self = this;
+                `;
+                container.innerHTML += parameterHTML;
 
-                    // Attach the function to the window object so it can be called from the HTML
-                    window.handleParameterSelection = function () {
-                        const paramSelect = document.getElementById('param-select');
-                        const numberInputContainer = document.getElementById('number-input-container');
-                        const stringInputContainer = document.getElementById('string-input-container');
+                // Populate the string dropdown options if they exist
+                const stringSelect = document.getElementById(`string-select-${index}`);
+                if (paramSet.stringOptions && paramSet.stringOptions.length > 0) {
+                    populateDropdown(paramSet.stringOptions, stringSelect);
+                }
 
-                        if (paramSelect.value === 'volume' || paramSelect.value === 'weight' || paramSelect.value === 'cavity') {
-                            numberInputContainer.style.display = 'block';
-                            stringInputContainer.style.display = 'none';
-                        } else if (paramSelect.value === 'comments' || paramSelect.value === 'shipping_status') {
-                            stringInputContainer.style.display = 'block';
-                            numberInputContainer.style.display = 'none';
+                // TODO need to fix dropdown value display
+                console.log("paramSet.stringVal", paramSet.stringVal, index);
+                // Set the selected value for string inputs if available
+                if (paramSet.stringVal) {
+                    // stringSelect.value = paramSet.stringVal;
 
-                            const stringSelect = document.getElementById('string-select');
-                            // Clear previous options in the dropdown
-                            stringSelect.innerHTML = '<option value="">--Select--</option>';
+                    // Loop through options and set the desired one as selected
+                    for (let option of stringSelect.options) {
+                        if (option.value == paramSet.stringVal) { // Check for the desired value
+                            option.selected = true;        // Set it as selected
+                            console.log(option);
+                            console.log(option.selected);
+                            stringSelect.value = paramSet.stringVal;
+                            console.log("stringSelect.value2", stringSelect.value);
 
-                            let dropdownVal = paramSelect.value === 'comments' ?
-                                self.table.getColumn("comments").getCells().map(cell => cell.getValue()).sort(piccoNumSorter)
-                                : ['Pending', 'In Progress', 'Completed'];
-                            populateDropdown(dropdownVal);
-                        } else {
-                            numberInputContainer.style.display = 'none';
-                            stringInputContainer.style.display = 'none';
+                            stringSelect.dispatchEvent(new Event('change'));
+                            break;
                         }
-                    };
-                    window.populateDropdown = function (options) {
-                        const stringSelect = document.getElementById('string-select');
-                        options.forEach(option => {
-                            const optionElement = document.createElement('option');
-                            optionElement.textContent = option;
-                            stringSelect.appendChild(optionElement);
-                        });
                     }
-                }.bind(this),
-                preConfirm: () => {
-                    const param = document.getElementById('param-select').value;
-                    const compare = document.getElementById('compare-select').value;
-                    const numberVal = document.getElementById('number-input').value;
-                    const stringVal = document.getElementById('string-select').value;
+                }
+            });
+
+            // Add event listeners for each set
+            parameters.forEach((_, index) => {
+                const paramSelect = document.getElementById(`param-select-${index}`);
+                paramSelect.addEventListener("change", () => handleParameterSelection(index));
+
+                const removeButton = document.getElementById(`remove-button-${index}`);
+                removeButton.addEventListener("click", () => removeParameterSet(index));
+            });
+        };
+
+        const addParameterSet = () => {
+            parameters = parameters.map((paramSet, index) => {
+                const param = document.getElementById(`param-select-${index}`).value;
+                const compare = document.getElementById(`compare-select-${index}`).value;
+                const numberVal = document.getElementById(`number-input-${index}`).value || "";
+                const stringVal = document.getElementById(`string-select-${index}`).value || "";
+                console.log("stringVal in add", stringVal);
+                return { ...paramSet, param, compare, numberVal, stringVal };
+            });
+
+            // Add a new empty parameter set
+            parameters.push({ param: "", compare: "", numberVal: "", stringVal: "", stringOptions: [] });
+
+            renderParameterSets();
+        };
+
+        const removeParameterSet = (index) => {
+            if (parameters.length === 1) {
+                Swal.showValidationMessage(`Please define at least one filter.`);
+                return;
+            }
+            parameters.splice(index, 1);
+            renderParameterSets();
+        };
+
+        const handleParameterSelection = (index) => {
+            const paramSelect = document.getElementById(`param-select-${index}`);
+            const numberInputContainer = document.getElementById(`number-input-container-${index}`);
+            const stringInputContainer = document.getElementById(`string-input-container-${index}`);
+
+            if (paramSelect.value === 'volume' || paramSelect.value === 'weight' || paramSelect.value === 'cavity') {
+                numberInputContainer.style.display = 'block';
+                stringInputContainer.style.display = 'none';
+            } else if (paramSelect.value === 'comments' || paramSelect.value === 'shipping_status') {
+                stringInputContainer.style.display = 'block';
+                numberInputContainer.style.display = 'none';
+
+                const stringSelect = document.getElementById(`string-select-${index}`);
+                const dropdownVal = paramSelect.value === 'comments' ?
+                    this.table.getColumn("comments").getCells().map(cell => cell.getValue()).sort(piccoNumSorter)
+                    : ['Pending', 'In Progress', 'Completed'];
+
+                parameters[index].stringOptions = dropdownVal;
+
+                populateDropdown(dropdownVal, stringSelect);
+            } else {
+                numberInputContainer.style.display = 'none';
+                stringInputContainer.style.display = 'none';
+            }
+        };
+
+        const populateDropdown = (options, dropdownElement) => {
+            dropdownElement.innerHTML = '<option value="">--Select--</option>'; // Clear previous options
+            options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.textContent = option;
+                optionElement.value = option;
+                dropdownElement.appendChild(optionElement);
+            });
+        };
+
+        Swal.fire({
+            title: "Define Advanced Filter",
+            icon: "info",
+            html: `<div id="filter-container" style="text-align: left; font-family: Arial, sans-serif; color: #333;"></div>`,
+            showCancelButton: true,
+            confirmButtonText: "Apply",
+            cancelButtonText: "Cancel",
+            didOpen: () => {
+                const addParameterButton = document.createElement("button");
+                addParameterButton.id = "add-parameter-button";
+                addParameterButton.type = "button";
+                addParameterButton.className = "swal2-confirm swal2-styled";
+                addParameterButton.textContent = "Add A Parameter Set";
+                addParameterButton.style.marginLeft = "10px";
+                addParameterButton.addEventListener("click", addParameterSet);
+
+                const confirmButton = Swal.getConfirmButton();
+                confirmButton.parentNode.insertBefore(addParameterButton, confirmButton);
+
+                renderParameterSets();
+            },
+            preConfirm: () => {
+                return parameters.map((paramSet, index) => {
+                    const param = document.getElementById(`param-select-${index}`).value;
+                    const compare = document.getElementById(`compare-select-${index}`).value;
+                    const numberVal = document.getElementById(`number-input-${index}`).value;
+                    const stringVal = document.getElementById(`string-select-${index}`).value;
 
                     if (!param) {
-                        Swal.showValidationMessage('Please select a parameter');
+                        Swal.showValidationMessage(`Please select a parameter for parameter set ${index + 1}.`);
                         return null;
                     }
                     if (!compare) {
-                        Swal.showValidationMessage('Please select a comparison');
+                        Swal.showValidationMessage(`Please select a comparison for parameter set ${index + 1}.`);
                         return null;
                     }
 
-                    let value;
-                    if (param === 'volume' || param === 'weight' || param === 'cavity') {
-                        if (!numberVal || numberVal < 0) {
-                            Swal.showValidationMessage('Please enter a valid threshold');
-                            return null;
-                        }
-                        value = numberVal;
-                    } else {
-                        if (!stringVal) {
-                            Swal.showValidationMessage('Please select a valid value');
-                            return null;
-                        }
-                        value = stringVal;
+                    const value = param === 'volume' || param === 'weight' || param === 'cavity' ? numberVal : stringVal;
+                    if (!value) {
+                        Swal.showValidationMessage(`Please provide a valid value for parameter set ${index + 1}.`);
+                        return null;
                     }
-                    return { param, compare, value };
-                }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const { param, compare, value } = result.value;
 
-                    // Apply the filter to the table
+                    return { param, compare, value };
+                });
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                let filterMessage = '';
+                result.value.forEach(({ param, compare, value }) => {
                     if (param === 'comments') {
                         this.table.setFilter(piccoNumFilter, { param, compare, value });
                     } else {
                         this.table.setFilter(param, compare, value);
                     }
-                    Swal.fire(`Currently showing entries: ${param} ${compare} ${value}`);
-                }
-            });
+                    filterMessage += `${param} ${compare} ${value}\n`;
+                });
+                Swal.fire(`Currently showing entries: ${filterMessage}`);
+            }
         });
     }
 
