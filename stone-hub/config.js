@@ -10,9 +10,12 @@ if (!APS_CLIENT_ID || !APS_CLIENT_SECRET || !SERVER_SESSION_SECRET) {
 // Set a default port if none is specified in the .env file
 PORT = PORT || 8080;
 
-
+// For local
 // Dynamically set the callback URL based on the current PORT
-const APS_CALLBACK_URL = `http://localhost:${PORT}/api/auth/callback`;
+// const APS_CALLBACK_URL = `http://localhost:${PORT}/api/auth/callback`;
+
+// For deployment
+const APS_CALLBACK_URL = "https://picco-stonehub.onrender.com/api/auth/callback"
 
 module.exports = {
     APS_CLIENT_ID,
