@@ -61,6 +61,15 @@ service.authRefreshMiddleware = async (req, res, next) => {
     next();
 };
 
+service.getAccessToken = async (req) => {
+    if (!req.session || !req.session.internal_token) {
+        throw new Error("No valid access token found in session.");
+    }
+    // console.error(req.session.internal_token);
+    return req.session.internal_token;
+};
+
+
 service.getUserProfile = async (accessToken) => {
     const resp = await authenticationClient.getUserInfo(accessToken);
     return resp;

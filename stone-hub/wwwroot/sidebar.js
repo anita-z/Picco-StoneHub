@@ -14,6 +14,11 @@ function createTreeNode(id, text, icon, children = false) {
     return { id, text, children, itree: { icon } };
 }
 
+// async function getVaults() {
+//     const vaults = await getJSON('/api/vault/v2/users?limit=2');
+//     return vaults;
+// }
+
 async function getHubs() {
     const hubs = await getJSON('/api/hubs');
     return hubs.map(hub => createTreeNode(`hub|${hub.id}`, hub.attributes.name, 'icon-hub', true));
@@ -48,6 +53,10 @@ export function initTree(selector, onSelectionChanged) {
                 return getHubs();
             } else {
                 const tokens = node.id.split('|');
+
+                // let vaults = getVaults();
+                // console.log(vaults);
+
                 switch (tokens[0]) {
                     case 'hub': return getProjects(tokens[1]);
                     case 'project': return getContents(tokens[1], tokens[2]);

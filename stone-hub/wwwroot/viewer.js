@@ -19,32 +19,6 @@ async function getAccessToken(callback) {
     }
 }
 
-/*
-// old method:
-export function initViewer(container) {
-    return new Promise(function (resolve, reject) {
-        Autodesk.Viewing.Initializer({ env: 'AutodeskProduction', getAccessToken }, function () {
-            const config = {
-                extensions: [
-                    'Autodesk.DocumentBrowser',
-                    'LoggerExtension',
-                    'SummaryExtension',
-                    'HistogramExtension',
-                    'DataGridExtension',
-                    'ModelChecklistExtension',
-                    // 'HeatmapExtension',
-                ]
-            };
-            const viewer = new Autodesk.Viewing.GuiViewer3D(container, config);
-            viewer.start();
-            viewer.setTheme('light-theme');
-            resolve(viewer);
-        });
-    });
-}
-*/
-
-
 export function initViewer(container, extensions) {
     return new Promise(function (resolve, reject) {
         Autodesk.Viewing.Initializer({ env: 'AutodeskProduction', getAccessToken }, function () {
