@@ -15,7 +15,7 @@ PORT = PORT || 8080;
 // const APS_CALLBACK_URL = `http://localhost:${PORT}/api/auth/callback`;
 
 // For deployment
-const APS_CALLBACK_URL = "https://picco-stonehub.onrender.com/api/auth/callback"
+const APS_CALLBACK_URL = "https://picco-stonehub-connect.web.app/api/auth/callback"
 
 module.exports = {
     APS_CLIENT_ID,
