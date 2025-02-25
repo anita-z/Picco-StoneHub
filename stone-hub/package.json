@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "cross-env FUNCTIONS_EMULATOR=true node server.js"
   },
   "keywords": [],
   "author": "",
@@ -20,6 +20,7 @@
     "firebase": "^11.3.1"
   },
   "devDependencies": {
-    "@types/forge-viewer": "^7.89.1"
+    "@types/forge-viewer": "^7.89.1",
+    "cross-env": "^7.0.3"
   }
 }
