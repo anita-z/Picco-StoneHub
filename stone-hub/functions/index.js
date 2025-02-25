@@ -21,19 +21,5 @@
 
 const functions = require("firebase-functions");
 
-const app = require("../server")
+const app = require("../server");
 exports.app = functions.https.onRequest(app);
-
-// const express = require("express");
-// const app = express();
-
-// // Import your routers
-// const authRouter = require("../routes/auth");
-// const hubsRouter = require("../routes/hubs");
-
-// // Mount the routers
-// app.use(authRouter);
-// app.use(hubsRouter);
-
-// // Export the Express app as "api"
-// exports.api = functions.https.onRequest(app);

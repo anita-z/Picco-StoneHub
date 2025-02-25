@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-let { APS_CLIENT_ID, APS_CLIENT_SECRET, SERVER_SESSION_SECRET, PORT } = process.env;
+let { APS_CLIENT_ID, APS_CLIENT_SECRET, SERVER_SESSION_SECRET } = process.env;
 
 if (!APS_CLIENT_ID || !APS_CLIENT_SECRET || !SERVER_SESSION_SECRET) {
     console.warn('Missing some of the required environment variables.');
@@ -8,7 +8,7 @@ if (!APS_CLIENT_ID || !APS_CLIENT_SECRET || !SERVER_SESSION_SECRET) {
 }
 
 // Set a default port if none is specified in the .env file
-PORT = PORT || 8080;
+// PORT = 8080;
 
 // For local
 // Dynamically set the callback URL based on the current PORT
@@ -22,5 +22,5 @@ module.exports = {
     APS_CLIENT_SECRET,
     APS_CALLBACK_URL,
     SERVER_SESSION_SECRET,
-    PORT
+    // PORT
 };
