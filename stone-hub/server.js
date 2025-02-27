@@ -10,6 +10,8 @@ app.use(session({ secret: SERVER_SESSION_SECRET, maxAge: 24 * 60 * 60 * 1000 }))
 app.use(require('./routes/auth.js'));
 app.use(require('./routes/hubs.js'));
 app.use(require('./routes/testCollection.js'));
+app.use(require('./routes/models.js'));
+app.use(require('./routes/connectionTypes.js'));
 
 // Only listen on a port if we’re NOT running in Cloud Functions
 if (process.env.FUNCTIONS_EMULATOR) {

@@ -1,31 +1,68 @@
-import { piccoNumSorter } from '../globals.js';
+import { piccoNumSorter, getJSON } from '../globals.js';
+
+const elementsDict = {};
+const connectionTypesDict = {};
+
+async function getConnectionTypeData() {
+    const connectionTypes = await getJSON('/firebase/connections');
+
+    for (const connection of connectionTypes) {
+        connectionTypesDict[connection.id] = {
+            order_link: connection.order_link,
+            price: connection.price
+        };
+    }
+}
+
+async function getStoneElements(model_urn) {
+    const elements = await getJSON(`/firebase/models/${model_urn}/elements`);
+    await getConnectionTypeData();
+
+    for (const element of elements) {
+
+        if (element.connection_type) {
+            elementsDict[element.id] = {
+                order_status: element.order_status,
+                connection_type: element.connection_type,
+                price: connectionTypesDict[element.connection_type].price,
+                order_link: connectionTypesDict[element.connection_type].order_link
+            };
+        }
+    }
+}
 
 const COSTANALYSIS_CONFIG = {
-    requiredProps: ['name', 'Volume', 'Level', 'Weight', 'Comments', 'Cavity', 'Shipping_Status'], // Which properties should be requested for each object
+    requiredProps: ['name', 'Comments', 'Order_Status', 'Connection_Type', 'Price', 'Order_Link'], // Which properties should be requested for each object
     columns: [ // Definition of individual grid columns (see http://tabulator.info for more details)
-        { title: 'ID', field: 'dbid' },
-        { title: 'Name', field: 'name', width: 150 },
-        { title: 'Volume', field: 'volume', hozAlign: 'left', formatter: 'progress' },
-        { title: 'Level', field: 'level' },
+        { title: 'ID', field: 'dbid', width: 50 },
+        { title: 'Name', field: 'name', width: 100 },
         {
             // comments sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
             title: 'Picco Number', field: 'comments', sorter: piccoNumSorter
         },
-        { title: 'Weight', field: 'weight' },
-        { title: 'Cavity', field: 'cavity' },
-        { title: 'Shipping Status', field: 'shipping_status' }
+        { title: 'Order Status', field: 'order_status' },
+        { title: 'Connection Type', field: 'connection_type' },
+        { title: 'Price', field: 'price' },
+        {
+            title: 'Order Link', field: 'order_link', width: 200, formatter: (cell) => {
+                const url = cell.getValue();
+                if (!url) return ""; // Avoid undefined or empty links
+                return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`;
+            }
+        }
     ],
     groupBy: 'level', // Optional column to group by
-    createRow: (dbid, name, props) => { // Function generating grid rows based on recieved object properties
-        const volume = props.find(p => p.displayName === 'Volume')?.displayValue;
-        const level = props.find(p => p.displayName === 'Level' && p.displayCategory === 'Constraints')?.displayValue;
+    createRow: (model_urn, dbid, name, props) => { // Function generating grid rows based on recieved object properties
         const comments = props.find(p => p.displayName === 'Comments')?.displayValue;
-        const weightProp = props.find(p => p.displayName === 'Weight');
-        const weight = weightProp ? weightProp.displayValue.toString() + weightProp.units : undefined;
-        const cavity = props.find(p => p.displayName === 'Cavity')?.displayValue;
-        const shipping_status = props.find(p => p.displayName === 'Shipping_Status')?.displayValue;
+        // const shipping_status = props.find(p => p.displayName === 'Shipping_Status')?.displayValue;
 
-        return { dbid, name, volume, level, comments, weight, cavity, shipping_status };
+        const stone_element_entry = elementsDict[dbid];
+        const order_status = stone_element_entry.order_status;
+        const connection_type = stone_element_entry.connection_type;
+        const price = stone_element_entry.price;
+        const order_link = stone_element_entry.order_link;
+
+        return { dbid, name, comments, order_status, connection_type, price, order_link };
     },
     onRowClick: (row, viewer) => {
         viewer.isolate([row.dbid]);
@@ -65,10 +102,12 @@ export class CostAnalysisPanel extends Autodesk.Viewing.UI.DockingPanel {
         });
     }
 
-    update(model, dbids) {
+    async update(model, dbids) {
+        await getStoneElements(model.getData().urn);
+        console.log(elementsDict);
         model.getBulkProperties(dbids, { propFilter: COSTANALYSIS_CONFIG.requiredProps }, (results) => {
             this.table.replaceData(results.map((result) =>
-                COSTANALYSIS_CONFIG.createRow(result.dbId, result.name, result.properties)));
+                COSTANALYSIS_CONFIG.createRow(model.getData().urn, result.dbId, result.name, result.properties)));
         }, (err) => {
             console.error(err);
         });

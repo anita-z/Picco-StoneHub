@@ -2,6 +2,16 @@
 // itemName, version, modelURN, pattern(encoded urn)
 export let currentSelectedModels = [];
 
+export async function getJSON(url) {
+    const resp = await fetch(url);
+    if (!resp.ok) {
+        alert('Could not load tree data. See console for more details.');
+        console.error(await resp.text());
+        return [];
+    }
+    return resp.json();
+}
+
 // Helper function to extract numeric parts from Picco numbers (e.g., "P1-10" -> [1, 10])
 function parsePiccoNum(picco) {
     // Return a default value if the string is invalid
