@@ -2,3 +2,4 @@
 node_modules/
 uploads/
 stone-hub/serviceAccountKey.json
+stone-hub/serviceAccountKey.b64
