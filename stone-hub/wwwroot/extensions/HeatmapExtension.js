@@ -69,7 +69,6 @@ class HeatmapExtension extends BaseExtension {
         this._panel = new HeatmapPanel(this, 'dashboard-heatmap-panel', 'Heatmap', { x: 10, y: 10 });
         
         this._panelContainer = document.getElementById('dashboard-heatmap-panel');
-        console.log(this._panelContainer);
         // Listen for the custom 'channelChanged' event
         this._panelContainer.addEventListener("channelChanged", (event) => {
             this.onChannelChanged(event.detail.value);

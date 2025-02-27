@@ -15,5 +15,5 @@ app.use(require('./routes/testCollection.js'));
 if (process.env.FUNCTIONS_EMULATOR) {
   // If you’re not using the Firebase emulator, run the local server
   const PORT = 8080;
-  app.listen(PORT, () => console.log(`Server listening on port ${PORT}...`));
+  app.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}...`));
 }
