@@ -57,10 +57,10 @@ const COSTANALYSIS_CONFIG = {
         // const shipping_status = props.find(p => p.displayName === 'Shipping_Status')?.displayValue;
 
         const stone_element_entry = elementsDict[dbid];
-        const order_status = stone_element_entry.order_status;
-        const connection_type = stone_element_entry.connection_type;
-        const price = stone_element_entry.price;
-        const order_link = stone_element_entry.order_link;
+        const order_status = stone_element_entry?.order_status;
+        const connection_type = stone_element_entry?.connection_type;
+        const price = stone_element_entry?.price;
+        const order_link = stone_element_entry?.order_link;
 
         return { dbid, name, comments, order_status, connection_type, price, order_link };
     },
