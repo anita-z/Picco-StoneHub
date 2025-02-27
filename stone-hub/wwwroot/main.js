@@ -1,6 +1,5 @@
 import { initViewer, loadModel } from './viewer.js';
 import { initTree } from './sidebar.js';
-import * as globals from './globals.js';
 import './extensions/LoggerExtension.js';
 import './extensions/SummaryExtension.js';
 import './extensions/HistogramExtension.js';

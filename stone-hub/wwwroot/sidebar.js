@@ -1,4 +1,4 @@
-import * as globals from './globals.js';
+import { currentSelectedModels } from './globals.js';
 
 async function getJSON(url) {
     const resp = await fetch(url);
@@ -79,11 +79,11 @@ export function initTree(selector, onSelectionChanged) {
                 const version = versionElement ? versionElement.textContent.trim() : null;
 
                 const modelURN = window.btoa(tokens[1]).replace(/=/g, '');
-                const exists = globals.currentSelectedModels.some(entry => entry.modelURN === modelURN);
+                const exists = currentSelectedModels.some(entry => entry.modelURN === modelURN);
 
                 if (!exists) {
                     if (itemName && version) {
-                        globals.currentSelectedModels.push({
+                        currentSelectedModels.push({
                             itemName,
                             version,
                             modelURN,
@@ -97,7 +97,7 @@ export function initTree(selector, onSelectionChanged) {
                 console.error('Unique Pattern not found for this model.');
             }
 
-            console.log(globals.currentSelectedModels);
+            console.log(currentSelectedModels);
             onSelectionChanged(tokens[1]);
         }
     });

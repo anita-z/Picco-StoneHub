@@ -1,3 +1,41 @@
 // Contain the following parameters for a model: 
 // itemName, version, modelURN, pattern(encoded urn)
 export let currentSelectedModels = [];
+
+// Helper function to extract numeric parts from Picco numbers (e.g., "P1-10" -> [1, 10])
+function parsePiccoNum(picco) {
+    // Return a default value if the string is invalid
+    if (!picco) return [0, 0];
+    // Remove "P" and split by "-"
+    return picco.slice(1).split('-').map(Number);
+}
+
+// Custom sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
+export const piccoNumSorter = (a, b) => {
+    //a, b - the two values being compared
+    const partsA = parsePiccoNum(a);
+    const partsB = parsePiccoNum(b);
+
+    return (partsA[0] === partsB[0]) ? partsA[1] - partsB[1] : partsA[0] - partsB[0];
+};
+
+// Custom filter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
+export function piccoNumFilter(data, filterParams) {
+    const rowValue = data[filterParams.param];
+    const compare = filterParams.compare;
+    const threshold = filterParams.value;
+
+    const rowParts = parsePiccoNum(rowValue);
+    const filterParts = parsePiccoNum(threshold);
+
+    // Comparison logic based on the operator
+    if (compare === '=') {
+        return rowParts[0] === filterParts[0] && rowParts[1] === filterParts[1];
+    } else if (compare === '>') {
+        return rowParts[0] > filterParts[0] || (rowParts[0] === filterParts[0] && rowParts[1] > filterParts[1]);
+    } else if (compare === '<') {
+        return rowParts[0] < filterParts[0] || (rowParts[0] === filterParts[0] && rowParts[1] < filterParts[1]);
+    }
+
+    return false;
+}
