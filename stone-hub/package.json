@@ -2,9 +2,10 @@
   "name": "stone-hub",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "cross-env FUNCTIONS_EMULATOR=true node server.js"
   },
   "keywords": [],
   "author": "",
@@ -16,9 +17,12 @@
     "@aps_sdk/data-management": "^0.1.0-beta.1",
     "cookie-session": "^2.1.0",
     "dotenv": "^16.4.5",
-    "express": "^4.21.1"
+    "express": "^4.21.1",
+    "firebase": "^11.3.1",
+    "firebase-admin": "^13.1.0"
   },
   "devDependencies": {
-    "@types/forge-viewer": "^7.89.1"
+    "@types/forge-viewer": "^7.89.1",
+    "cross-env": "^7.0.3"
   }
 }

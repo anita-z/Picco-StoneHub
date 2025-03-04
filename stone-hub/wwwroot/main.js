@@ -1,12 +1,12 @@
 import { initViewer, loadModel } from './viewer.js';
 import { initTree } from './sidebar.js';
-import * as globals from './globals.js';
 import './extensions/LoggerExtension.js';
 import './extensions/SummaryExtension.js';
 import './extensions/HistogramExtension.js';
 import './extensions/DataGridExtension.js';
 import './extensions/ModelChecklistExtension.js';
 import './extensions/HeatmapExtension.js';
+import './extensions/CostAnalysisExtension.js';
 
 const EXTENSIONS = [
     'Autodesk.DocumentBrowser',
@@ -16,6 +16,7 @@ const EXTENSIONS = [
     'DataGridExtension',
     'ModelChecklistExtension',
     'HeatmapExtension',
+    'CostAnalysisExtension',
     'Autodesk.AEC.LevelsExtension'
 ];
 
@@ -46,7 +47,8 @@ try {
                 'HistogramExtension',
                 'DataGridExtension',
                 'ModelChecklistExtension',
-                'HeatmapExtension'
+                'HeatmapExtension',
+                'CostAnalysisExtension'
             ].map(id => viewer.getExtension(id));
             for (const ext of extensions) {
                 ext.activate();

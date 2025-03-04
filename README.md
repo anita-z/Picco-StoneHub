@@ -30,3 +30,6 @@ StoneHub is a web application worked as the communication interface among manufa
     npm start
     ``` 
 - Open http://localhost:8080/ in a web broswer and now you are running Picco StoneHub web application!
+
+
+Icons by [Icon8](https://icons8.com/)

@@ -1,40 +1,4 @@
-// Helper function to extract numeric parts from Picco numbers (e.g., "P1-10" -> [1, 10])
-function parsePiccoNum(picco) {
-    // Return a default value if the string is invalid
-    if (!picco) return [0, 0];
-    // Remove "P" and split by "-"
-    return picco.slice(1).split('-').map(Number);
-}
-
-// Custom sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
-const piccoNumSorter = (a, b) => {
-    //a, b - the two values being compared
-    const partsA = parsePiccoNum(a);
-    const partsB = parsePiccoNum(b);
-
-    return (partsA[0] === partsB[0]) ? partsA[1] - partsB[1] : partsA[0] - partsB[0];
-};
-
-// Custom filter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
-function piccoNumFilter(data, filterParams) {
-    const rowValue = data[filterParams.param];
-    const compare = filterParams.compare;
-    const threshold = filterParams.value;
-
-    const rowParts = parsePiccoNum(rowValue);
-    const filterParts = parsePiccoNum(threshold);
-
-    // Comparison logic based on the operator
-    if (compare === '=') {
-        return rowParts[0] === filterParts[0] && rowParts[1] === filterParts[1];
-    } else if (compare === '>') {
-        return rowParts[0] > filterParts[0] || (rowParts[0] === filterParts[0] && rowParts[1] > filterParts[1]);
-    } else if (compare === '<') {
-        return rowParts[0] < filterParts[0] || (rowParts[0] === filterParts[0] && rowParts[1] < filterParts[1]);
-    }
-
-    return false;
-}
+import { piccoNumSorter, piccoNumFilter } from '../globals.js';
 
 const DATAGRID_CONFIG = {
     requiredProps: ['name', 'Volume', 'Level', 'Weight', 'Comments', 'Cavity', 'Shipping_Status'], // Which properties should be requested for each object
@@ -232,9 +196,14 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                 numberInputContainer.style.display = 'none';
 
                 const stringSelect = document.getElementById(`string-select-${index}`);
+
+                // Obtain unique values and defined values from table columns 
                 const dropdownVal = paramSelect.value === 'comments' ?
-                    this.table.getColumn("comments").getCells().map(cell => cell.getValue()).sort(piccoNumSorter)
-                    : ['Pending', 'In Progress', 'Completed'];
+                    [...new Set(this.table.getColumn("comments").getCells()
+                        .map(cell => cell.getValue())
+                        .filter(value => value !== undefined && value !== null)
+                    )].sort(piccoNumSorter)
+                    : ['Preparing', 'In Progress', 'Completed'];
 
                 parameters[index].stringOptions = dropdownVal;
 

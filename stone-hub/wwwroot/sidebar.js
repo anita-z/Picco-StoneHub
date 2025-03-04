@@ -1,14 +1,4 @@
-import * as globals from './globals.js';
-
-async function getJSON(url) {
-    const resp = await fetch(url);
-    if (!resp.ok) {
-        alert('Could not load tree data. See console for more details.');
-        console.error(await resp.text());
-        return [];
-    }
-    return resp.json();
-}
+import { currentSelectedModels, getJSON } from './globals.js';
 
 function createTreeNode(id, text, icon, children = false) {
     return { id, text, children, itree: { icon } };
@@ -79,11 +69,11 @@ export function initTree(selector, onSelectionChanged) {
                 const version = versionElement ? versionElement.textContent.trim() : null;
 
                 const modelURN = window.btoa(tokens[1]).replace(/=/g, '');
-                const exists = globals.currentSelectedModels.some(entry => entry.modelURN === modelURN);
+                const exists = currentSelectedModels.some(entry => entry.modelURN === modelURN);
 
                 if (!exists) {
                     if (itemName && version) {
-                        globals.currentSelectedModels.push({
+                        currentSelectedModels.push({
                             itemName,
                             version,
                             modelURN,
@@ -97,7 +87,7 @@ export function initTree(selector, onSelectionChanged) {
                 console.error('Unique Pattern not found for this model.');
             }
 
-            console.log(globals.currentSelectedModels);
+            console.log(currentSelectedModels);
             onSelectionChanged(tokens[1]);
         }
     });

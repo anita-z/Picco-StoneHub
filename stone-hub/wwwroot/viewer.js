@@ -4,7 +4,6 @@ import './extensions/HistogramExtension.js';
 import './extensions/DataGridExtension.js';
 import './extensions/ModelChecklistExtension.js';
 import './extensions/HeatmapExtension.js';
-import * as globals from './globals.js';
 
 async function getAccessToken(callback) {
     try {
