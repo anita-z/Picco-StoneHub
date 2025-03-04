@@ -196,9 +196,14 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                 numberInputContainer.style.display = 'none';
 
                 const stringSelect = document.getElementById(`string-select-${index}`);
+
+                // Obtain unique values and defined values from table columns 
                 const dropdownVal = paramSelect.value === 'comments' ?
-                    this.table.getColumn("comments").getCells().map(cell => cell.getValue()).sort(piccoNumSorter)
-                    : ['Pending', 'In Progress', 'Completed'];
+                    [...new Set(this.table.getColumn("comments").getCells()
+                        .map(cell => cell.getValue())
+                        .filter(value => value !== undefined && value !== null)
+                    )].sort(piccoNumSorter)
+                    : ['Preparing', 'In Progress', 'Completed'];
 
                 parameters[index].stringOptions = dropdownVal;
 
