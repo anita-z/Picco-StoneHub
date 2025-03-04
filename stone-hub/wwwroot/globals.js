@@ -49,3 +49,24 @@ export function piccoNumFilter(data, filterParams) {
 
     return false;
 }
+
+// Stores cached connection types
+const connectionTypesDict = {};
+
+export async function getConnectionTypeData() {
+    if (Object.keys(connectionTypesDict).length !== 0) {
+        return connectionTypesDict;
+    } else {
+        const connectionTypes = await getJSON('/firebase/connections');
+
+        for (const connection of connectionTypes) {
+            connectionTypesDict[connection.id] = {
+                order_link: connection.order_link,
+                price: connection.price
+            };
+        }
+        return connectionTypesDict;
+    }
+}
+
+export let modelDataDict = {};

@@ -1,4 +1,4 @@
-import * as globals from '../globals.js';
+import { currentSelectedModels } from '../globals.js';
 
 // Checklist Panel Class
 export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
@@ -97,7 +97,7 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
 
     async setupModelSelection() {
         try {
-            globals.currentSelectedModels.forEach(model => {
+            currentSelectedModels.forEach(model => {
                 this.addChecklistItem(model.pattern, model.itemName, model.modelURN, model.version);
             });
 
@@ -119,7 +119,7 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
                 }).then((result) => {
                     if (result.isConfirmed) {
                         this.models.length = 0;
-                        globals.currentSelectedModels.length = 0;
+                        currentSelectedModels.length = 0;
                         this.update();
                     }
                 });
@@ -209,7 +209,7 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
     }
 
     update() {
-        if (this.models.length === 0 && globals.currentSelectedModels.length === 0) {
+        if (this.models.length === 0 && currentSelectedModels.length === 0) {
             // Clear all content of model checklist
             const container = document.querySelector('.modelchecklist-container');
             if (container) {
