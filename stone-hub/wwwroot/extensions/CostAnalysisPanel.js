@@ -66,7 +66,7 @@ const COSTANALYSIS_CONFIG = {
             },
         },
     ],
-    groupBy: "level", // Optional column to group by
+    // groupBy: 'order_status',
     createRow: (elementsDict, dbid, name, props) => {
         // Function generating grid rows based on recieved object properties
         const comments = props.find(

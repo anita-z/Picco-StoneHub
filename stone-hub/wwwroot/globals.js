@@ -1,5 +1,6 @@
 // Contain the following parameters for a model: 
 // itemName, version, modelURN, pattern(encoded urn)
+// NOTE: urn are stored using "/" as the delimiter before version number, use with cautions!!!
 export let currentSelectedModels = [];
 
 export async function getJSON(url) {

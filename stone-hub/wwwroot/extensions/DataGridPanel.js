@@ -1,4 +1,4 @@
-import { piccoNumSorter, piccoNumFilter } from '../globals.js';
+import { currentSelectedModels, piccoNumSorter, piccoNumFilter } from '../globals.js';
 
 const DATAGRID_CONFIG = {
     requiredProps: ['name', 'Volume', 'Level', 'Weight', 'Comments', 'Cavity', 'Shipping_Status'], // Which properties should be requested for each object
@@ -330,11 +330,50 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
 
     update(model, dbids) {
-        model.getBulkProperties(dbids, { propFilter: DATAGRID_CONFIG.requiredProps }, (results) => {
-            this.table.replaceData(results.map((result) =>
-                DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties)));
-        }, (err) => {
-            console.error(err);
-        });
+        const loadedModels = this.extension.viewer.impl.modelQueue().getModels();
+        // console.log("loadedMOdels", loadedModels);
+
+        // If the viewer is showing combined models, show combined data as well
+        if (loadedModels.length >= 2) {
+            // console.log(currentSelectedModels);
+
+            let elementsGrouping = {};
+
+            loadedModels.forEach(async model => {
+                const dbids = await this.extension.findLeafNodes(model);
+                // Manually modify urn: replace "_" with "/" due to different annotations
+                const model_urn = model.getData().urn.replace(/_/g, "/");
+                const entry = currentSelectedModels.find(entry => entry.modelURN === model_urn);
+                const model_name = entry ? entry.itemName : null; // Handle case where no match is found
+                // console.log(model_name);
+
+                dbids.forEach(dbid => {
+                    elementsGrouping[dbid] = model_name;
+                });
+
+                console.log(elementsGrouping);
+
+                model.getBulkProperties(dbids, { propFilter: DATAGRID_CONFIG.requiredProps }, (results) => {
+                    this.table.addData(results.map((result) =>
+                        DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties)));
+
+                    if (model_name) {
+                        this.table.setGroupBy([
+                            row => elementsGrouping[row.dbid]
+                        ]);
+                    }
+                }, (err) => {
+                    console.error(err);
+                });
+            });
+        } else {
+            // Otherwise, clear the existing rows and update data for the current model
+            model.getBulkProperties(dbids, { propFilter: DATAGRID_CONFIG.requiredProps }, (results) => {
+                this.table.replaceData(results.map((result) =>
+                    DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties)));
+            }, (err) => {
+                console.error(err);
+            });
+        }
     }
 }

@@ -180,7 +180,7 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
             // Unload previous models
             loadedModels.forEach(model => {
                 this.extension.viewer.impl.unloadModel(model);
-                console.log(`Unloaded model: ${model.id}`);
+                console.log(`Unloaded model of id: ${model.id}`);
             });
 
             this.extension.viewer.impl.invalidate(true, true, true);
@@ -221,13 +221,15 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
         const loadedModels = this.extension.viewer.impl.modelQueue().getModels();
         loadedModels.forEach(model => {
             // Manually modify urn: replace "_" with "/" due to different annotations
-            const loadedModelUrn = model.getData().urn.replace(/_/g, "/");;
+            const loadedModelUrn = model.getData().urn.replace(/_/g, "/");
 
             const matchedModel = this.models.find(item =>
                 loadedModelUrn === item.urn);
             if (matchedModel) {
                 matchedModel.checkbox.checked = true;
             }
+
+            // console.log("model.getPropertyDb()", model.getPropertyDb());
         });
     }
 }
