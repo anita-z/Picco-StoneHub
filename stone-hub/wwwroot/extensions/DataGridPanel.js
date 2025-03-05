@@ -335,6 +335,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
         // If the viewer is showing combined models, show combined data as well
         if (loadedModels.length >= 2) {
+            this.table.clearData();
             // console.log(currentSelectedModels);
 
             let elementsGrouping = {};
@@ -351,21 +352,17 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                     elementsGrouping[dbid] = model_name;
                 });
 
-                console.log(elementsGrouping);
+                // console.log(elementsGrouping);
 
                 model.getBulkProperties(dbids, { propFilter: DATAGRID_CONFIG.requiredProps }, (results) => {
                     this.table.addData(results.map((result) =>
                         DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties)));
-
-                    if (model_name) {
-                        this.table.setGroupBy([
-                            row => elementsGrouping[row.dbid]
-                        ]);
-                    }
                 }, (err) => {
                     console.error(err);
                 });
             });
+
+            this.table.setGroupBy([row => elementsGrouping[row.dbid]]);
         } else {
             // Otherwise, clear the existing rows and update data for the current model
             model.getBulkProperties(dbids, { propFilter: DATAGRID_CONFIG.requiredProps }, (results) => {
