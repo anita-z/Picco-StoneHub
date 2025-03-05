@@ -331,12 +331,16 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
     update(model, dbids) {
         const loadedModels = this.extension.viewer.impl.modelQueue().getModels();
-        // console.log("loadedMOdels", loadedModels);
+        console.log("loadedMOdels", loadedModels);
+
+        // TODO: need to apply combined data to all other extensions
+
+        // TODO: need to add new feature to modelchecklist: unload all models, clear checklist
+
 
         // If the viewer is showing combined models, show combined data as well
         if (loadedModels.length >= 2) {
             this.table.clearData();
-            // console.log(currentSelectedModels);
 
             let elementsGrouping = {};
 
@@ -346,13 +350,15 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                 const model_urn = model.getData().urn.replace(/_/g, "/");
                 const entry = currentSelectedModels.find(entry => entry.modelURN === model_urn);
                 const model_name = entry ? entry.itemName : null; // Handle case where no match is found
-                // console.log(model_name);
 
                 dbids.forEach(dbid => {
-                    elementsGrouping[dbid] = model_name;
+                    if (!elementsGrouping[dbid]) {
+                        elementsGrouping[dbid] = [];
+                    }
+                    if (!elementsGrouping[dbid].includes[model_name]) {
+                        elementsGrouping[dbid].push(model_name);
+                    }
                 });
-
-                // console.log(elementsGrouping);
 
                 model.getBulkProperties(dbids, { propFilter: DATAGRID_CONFIG.requiredProps }, (results) => {
                     this.table.addData(results.map((result) =>
@@ -362,7 +368,10 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                 });
             });
 
-            this.table.setGroupBy([row => elementsGrouping[row.dbid]]);
+            this.table.setGroupBy([
+                // Combine model names for shared dbids
+                row => elementsGrouping[row.dbid]?.join(", ") || "Ungrouped"
+            ]);
         } else {
             // Otherwise, clear the existing rows and update data for the current model
             model.getBulkProperties(dbids, { propFilter: DATAGRID_CONFIG.requiredProps }, (results) => {
