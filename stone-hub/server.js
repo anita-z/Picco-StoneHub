@@ -16,6 +16,6 @@ app.use(require('./routes/connectionTypes.js'));
 // Only listen on a port if we’re NOT running in Cloud Functions
 if (process.env.FUNCTIONS_EMULATOR) {
   // If you’re not using the Firebase emulator, run the local server
-  const PORT = 8080;
+  const PORT = 8070;
   app.listen(PORT, () => console.log(`Server listening on http://localhost:${PORT}...`));
 }

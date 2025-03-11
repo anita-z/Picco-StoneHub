@@ -1,4 +1,5 @@
 import {
+    currentSelectedModels,
     piccoNumSorter,
     getJSON,
     getConnectionTypeData,
@@ -66,7 +67,7 @@ const COSTANALYSIS_CONFIG = {
             },
         },
     ],
-    groupBy: "level", // Optional column to group by
+    // groupBy: 'order_status',
     createRow: (elementsDict, dbid, name, props) => {
         // Function generating grid rows based on recieved object properties
         const comments = props.find(
@@ -78,7 +79,7 @@ const COSTANALYSIS_CONFIG = {
         const connection_type = stone_element_entry?.connection_type;
         const price = stone_element_entry?.price;
         const order_link = stone_element_entry?.order_link;
-
+        
         return {
             dbid,
             name,
@@ -86,7 +87,7 @@ const COSTANALYSIS_CONFIG = {
             order_status,
             connection_type,
             price,
-            order_link,
+            order_link
         };
     },
     onRowClick: (row, viewer) => {
@@ -129,25 +130,63 @@ export class CostAnalysisPanel extends Autodesk.Viewing.UI.DockingPanel {
     }
 
     async update(model, dbids) {
-        const elementsDict = await getStoneElements(model.getData().urn);
-        model.getBulkProperties(
-            dbids,
-            { propFilter: COSTANALYSIS_CONFIG.requiredProps },
-            (results) => {
-                this.table.replaceData(
-                    results.map((result) =>
+        const loadedModels = this.extension.viewer.impl.modelQueue().getModels();
+        console.log("loadedMOdels", loadedModels);
+
+        // If the viewer is showing combined models, show combined data as well
+        if (loadedModels.length >= 2) {
+            this.table.clearData();
+
+            let elementsGrouping = {};
+
+            loadedModels.forEach(async model => {
+                const dbids = await this.extension.findLeafNodes(model);
+                // Manually modify urn: replace "_" with "/" due to different annotations
+                const model_urn = model.getData().urn
+                const modified_model_urn = model_urn.replace(/_/g, "/");
+                const entry = currentSelectedModels.find(entry => entry.modelURN === modified_model_urn);
+                const model_name = entry ? entry.itemName : null; // Handle case where no match is found
+
+                dbids.forEach(dbid => {
+                    if (!elementsGrouping[dbid]) {
+                        elementsGrouping[dbid] = [];
+                    }
+                    if (!elementsGrouping[dbid].includes[model_name]) {
+                        elementsGrouping[dbid].push(model_name);
+                    }
+                });
+
+                const elementsDict = await getStoneElements(model_urn);
+                model.getBulkProperties(dbids, { propFilter: COSTANALYSIS_CONFIG.requiredProps }, (results) => {
+                    this.table.replaceData(results.map((result) =>
                         COSTANALYSIS_CONFIG.createRow(
                             elementsDict,
                             result.dbId,
                             result.name,
                             result.properties
-                        )
-                    )
-                );
-            },
-            (err) => {
+                        )));
+                }, (err) => {
+                    console.error(err);
+                });
+            });
+
+            this.table.setGroupBy([
+                // Combine model names for shared dbids
+                row => elementsGrouping[row.dbid]?.join(", ") || "Ungrouped"
+            ]);
+        } else {
+            const elementsDict = await getStoneElements(model.getData().urn);
+            model.getBulkProperties(dbids, { propFilter: COSTANALYSIS_CONFIG.requiredProps }, (results) => {
+                this.table.replaceData(results.map((result) =>
+                    COSTANALYSIS_CONFIG.createRow(
+                        elementsDict,
+                        result.dbId,
+                        result.name,
+                        result.properties
+                    )));
+            }, (err) => {
                 console.error(err);
-            }
-        );
+            });
+        }
     }
 }

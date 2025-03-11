@@ -11,7 +11,7 @@ StoneHub is a web application worked as the communication interface among manufa
     APS_CLIENT_ID="<client-id>"
     APS_CLIENT_SECRET="<client-secret>"
     SERVER_SESSION_SECRET="<secret-phrase>" # secret phrase used to encrypt/decrypt server session cookies
-    PORT=8080
+    PORT=8070
     ```
 
     To get your own `APS_CLIENT_ID` and `APS_CLIENT_SECRET`, please see:
@@ -29,7 +29,7 @@ StoneHub is a web application worked as the communication interface among manufa
     npm install
     npm start
     ``` 
-- Open http://localhost:8080/ in a web broswer and now you are running Picco StoneHub web application!
+- Open http://localhost:8070/ in a web broswer and now you are running Picco StoneHub web application!
 
 
 Icons by [Icon8](https://icons8.com/)
