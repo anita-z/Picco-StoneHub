@@ -68,7 +68,7 @@ const COSTANALYSIS_CONFIG = {
         },
     ],
     // groupBy: 'order_status',
-    createRow: (isCombined, model_name, elementsDict, dbid, name, props) => {
+    createRow: (elementsDict, dbid, name, props) => {
         // Function generating grid rows based on recieved object properties
         const comments = props.find(
             (p) => p.displayName === "Comments"
@@ -79,19 +79,6 @@ const COSTANALYSIS_CONFIG = {
         const connection_type = stone_element_entry?.connection_type;
         const price = stone_element_entry?.price;
         const order_link = stone_element_entry?.order_link;
-
-        if (isCombined) {
-            return {
-                dbid,
-                name,
-                comments,
-                order_status,
-                connection_type,
-                price,
-                order_link,
-                model_name
-            };
-        }
         
         return {
             dbid,
