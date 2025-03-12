@@ -1,5 +1,12 @@
 import { currentSelectedModels, piccoNumSorter, piccoNumFilter } from '../globals.js';
 
+let DATAGRID_DATA = [];
+let tabledata = [
+    { id: 1, name: "Billy Bob", age: 12, gender: "male", height: 95, col: "red", dob: "14/05/2010" },
+    { id: 2, name: "Jenny Jane", age: 42, gender: "female", height: 142, col: "blue", dob: "30/07/1954" },
+    { id: 3, name: "Steve McAlistaire", age: 35, gender: "male", height: 176, col: "green", dob: "04/11/1982" },
+];
+
 const DATAGRID_CONFIG = {
     requiredProps: ['name', 'Volume', 'Level', 'Weight', 'Comments', 'Cavity', 'Shipping_Status'], // Which properties should be requested for each object
     columns: [ // Definition of individual grid columns (see http://tabulator.info for more details)
@@ -25,12 +32,27 @@ const DATAGRID_CONFIG = {
         const cavity = props.find(p => p.displayName === 'Cavity')?.displayValue;
         const shipping_status = props.find(p => p.displayName === 'Shipping_Status')?.displayValue;
 
+        // DATAGRID_DATA.push({ dbid, name, volume, level, comments, weight, cavity, shipping_status });
         return { dbid, name, volume, level, comments, weight, cavity, shipping_status };
     },
     onRowClick: (row, viewer) => {
         viewer.isolate([row.dbid]);
         viewer.fitToView([row.dbid]);
-    }
+    },
+    autoColumns: "full",
+    autoColumnsDefinitions: [
+        { field: 'dbid' },
+        { field: 'name', width: 150 },
+        { field: 'volume', hozAlign: 'left', formatter: 'progress' },
+        { field: 'level' },
+        {
+            // comments sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
+            field: 'comments', sorter: piccoNumSorter
+        },
+        { field: 'weight' },
+        { field: 'cavity' },
+        { field: 'shipping_status', editor: "input" }
+    ],
 };
 
 export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
@@ -57,11 +79,15 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
         // See http://tabulator.info
         this.table = new Tabulator('.datagrid-container', {
-            height: '100%',
-            layout: 'fitColumns',
-            columns: DATAGRID_CONFIG.columns,
-            groupBy: DATAGRID_CONFIG.groupBy,
-            rowClick: (e, row) => DATAGRID_CONFIG.onRowClick(row.getData(), this.extension.viewer)
+            // height: '100%',
+            // layout: 'fitColumns',
+            // pagination: true,
+            // columns: DATAGRID_CONFIG.columns,
+            // groupBy: DATAGRID_CONFIG.groupBy,
+            // rowClick: (e, row) => DATAGRID_CONFIG.onRowClick(row.getData(), this.extension.viewer)
+
+            data: [],
+            autoCoulumns: true
         });
 
         // Add a button to clear the filter
@@ -71,6 +97,11 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         });
 
         this.addButton("Set Filter", "set-filter", this.defineAdvancedFilter.bind(this));
+
+        // TODO: implement callback functions
+        this.addButton("Edit Table", "edit-table");
+
+        this.addButton("Save Table", "save-table");
     }
 
     defineAdvancedFilter() {
@@ -373,10 +404,34 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                 row => elementsGrouping[row.dbid]?.join(", ") || "Ungrouped"
             ]);
         } else {
+            this.table?.destroy();
             // Otherwise, clear the existing rows and update data for the current model
             model.getBulkProperties(dbids, { propFilter: DATAGRID_CONFIG.requiredProps }, (results) => {
-                this.table.replaceData(results.map((result) =>
-                    DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties)));
+                // results.map((result) =>
+                //     DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties));
+                // this.table.data = DATAGRID_DATA;
+
+
+
+                const replacedData = results.map((result) =>
+                    DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties));
+
+                DATAGRID_DATA = replacedData;
+                // this.table.setData(replacedData);
+                console.log(replacedData);
+
+                // console.log(tabledata);
+                console.log(DATAGRID_DATA);
+                // //define table
+                this.table = new Tabulator(".datagrid-container", {
+                    data: DATAGRID_DATA,
+                    autoColumns: DATAGRID_CONFIG.autoColumns,
+                    autoColumnsDefinitions: DATAGRID_CONFIG.autoColumnsDefinitions
+                });
+
+
+                // this.table.replaceData(results.map((result) =>
+                //     DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties)));
             }, (err) => {
                 console.error(err);
             });
