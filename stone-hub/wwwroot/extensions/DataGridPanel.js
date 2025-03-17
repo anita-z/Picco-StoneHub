@@ -1,11 +1,6 @@
 import { currentSelectedModels, piccoNumSorter, piccoNumFilter } from '../globals.js';
 
 let DATAGRID_DATA = [];
-let tabledata = [
-    { id: 1, name: "Billy Bob", age: 12, gender: "male", height: 95, col: "red", dob: "14/05/2010" },
-    { id: 2, name: "Jenny Jane", age: 42, gender: "female", height: 142, col: "blue", dob: "30/07/1954" },
-    { id: 3, name: "Steve McAlistaire", age: 35, gender: "male", height: 176, col: "green", dob: "04/11/1982" },
-];
 
 const DATAGRID_CONFIG = {
     requiredProps: ['name', 'Volume', 'Level', 'Weight', 'Comments', 'Cavity', 'Shipping_Status'], // Which properties should be requested for each object
@@ -24,13 +19,13 @@ const DATAGRID_CONFIG = {
     ],
     groupBy: 'level', // Optional column to group by
     createRow: (dbid, name, props) => { // Function generating grid rows based on recieved object properties
-        const volume = props.find(p => p.displayName === 'Volume')?.displayValue;
-        const level = props.find(p => p.displayName === 'Level' && p.displayCategory === 'Constraints')?.displayValue;
-        const comments = props.find(p => p.displayName === 'Comments')?.displayValue;
-        const weightProp = props.find(p => p.displayName === 'Weight');
-        const weight = weightProp ? weightProp.displayValue.toString() + weightProp.units : undefined;
-        const cavity = props.find(p => p.displayName === 'Cavity')?.displayValue;
-        const shipping_status = props.find(p => p.displayName === 'Shipping_Status')?.displayValue;
+        const volume = props.find(p => p.displayName === 'Volume')?.displayValue || "";
+        const level = props.find(p => p.displayName === 'Level' && p.displayCategory === 'Constraints')?.displayValue || "";
+        const comments = props.find(p => p.displayName === 'Comments')?.displayValue || "";
+        const weightProp = props.find(p => p.displayName === 'Weight') || "";
+        const weight = weightProp ? weightProp.displayValue.toString() + weightProp.units : "" ;
+        const cavity = props.find(p => p.displayName === 'Cavity')?.displayValue || "";
+        const shipping_status = props.find(p => p.displayName === 'Shipping_Status')?.displayValue || "";
 
         // DATAGRID_DATA.push({ dbid, name, volume, level, comments, weight, cavity, shipping_status });
         return { dbid, name, volume, level, comments, weight, cavity, shipping_status };
@@ -371,7 +366,9 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
         // If the viewer is showing combined models, show combined data as well
         if (loadedModels.length >= 2) {
-            this.table.clearData();
+            // this.table.clearData();
+            this.table?.destroy();
+            DATAGRID_DATA = [];
 
             let elementsGrouping = {};
 
@@ -392,17 +389,43 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                 });
 
                 model.getBulkProperties(dbids, { propFilter: DATAGRID_CONFIG.requiredProps }, (results) => {
-                    this.table.addData(results.map((result) =>
-                        DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties)));
+
+                    const modelData = results.map((result) =>
+                        DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties));
+
+                    DATAGRID_DATA.push(...modelData);
+
+                    // this.table.addData(results.map((result) =>
+                    //     DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties)));
                 }, (err) => {
                     console.error(err);
                 });
             });
 
-            this.table.setGroupBy([
-                // Combine model names for shared dbids
-                row => elementsGrouping[row.dbid]?.join(", ") || "Ungrouped"
-            ]);
+            console.log("combined DATAGRID_DATA", DATAGRID_DATA);
+            // //define table
+            // TODO: need to fix table not rendering issue
+            this.table = new Tabulator(".datagrid-container", {
+                data: DATAGRID_DATA,
+                autoColumns: true,
+                // autoColumns: DATAGRID_CONFIG.autoColumns,
+                // autoColumnsDefinitions: DATAGRID_CONFIG.autoColumnsDefinitions,
+                // // height: '100%',
+                // minHeight: 500, //do not let table get smaller than 300 px heigh
+                // layout: "fitDataStretch",
+                // // layout: 'fitColumns',
+
+                // // pagination: "local",
+                // // paginationAddRow: "table",
+                // // groupBy: DATAGRID_CONFIG.groupBy,
+                // rowClick: (e, row) => DATAGRID_CONFIG.onRowClick(row.getData(), this.extension.viewer)
+            });
+
+            // this.table.setGroupBy([
+            //     // Combine model names for shared dbids
+            //     row => elementsGrouping[row.dbid]?.join(", ") || "Ungrouped"
+            // ]);
+            
         } else {
             this.table?.destroy();
             // Otherwise, clear the existing rows and update data for the current model
@@ -411,24 +434,26 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                 //     DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties));
                 // this.table.data = DATAGRID_DATA;
 
-
-
-                const replacedData = results.map((result) =>
+                DATAGRID_DATA = results.map((result) =>
                     DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties));
 
-                DATAGRID_DATA = replacedData;
-                // this.table.setData(replacedData);
-                console.log(replacedData);
+                // DATAGRID_DATA = replacedData;
 
-                // console.log(tabledata);
-                console.log(DATAGRID_DATA);
+                console.log("single DATAGRID_DATA", DATAGRID_DATA);
                 // //define table
                 this.table = new Tabulator(".datagrid-container", {
                     data: DATAGRID_DATA,
                     autoColumns: DATAGRID_CONFIG.autoColumns,
-                    autoColumnsDefinitions: DATAGRID_CONFIG.autoColumnsDefinitions
+                    autoColumnsDefinitions: DATAGRID_CONFIG.autoColumnsDefinitions,
+                    // height: '100%',
+                    minHeight: 500, //do not let table get smaller than 300 px heigh
+                    layout: "fitDataStretch",
+                    // layout: 'fitColumns',
+                    // pagination: "local",
+                    // paginationAddRow: "table",
+                    groupBy: DATAGRID_CONFIG.groupBy,
+                    rowClick: (e, row) => DATAGRID_CONFIG.onRowClick(row.getData(), this.extension.viewer)
                 });
-
 
                 // this.table.replaceData(results.map((result) =>
                 //     DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties)));
