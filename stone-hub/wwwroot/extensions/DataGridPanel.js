@@ -2,6 +2,51 @@ import { currentSelectedModels, piccoNumSorter, piccoNumFilter } from '../global
 
 let DATAGRID_DATA = [];
 
+let rowMenu = [
+    {
+        label: "Hide Column",
+        action: function (e, column) {
+            column.hide();
+        }
+    },
+    {
+        label: "Sub Menu", //sub menu
+        menu: [
+            {
+                label: "Do Something",
+                action: function (e, column) {
+                    //do something
+                }
+            },
+            {
+                label: "Do Something Else",
+                action: function (e, column) {
+                    //do something else
+                }
+            },
+            {
+                label: "Deeper Sub Menu", //sub menu nested in sub menu
+                menu: [
+                    {
+                        label: "Do Another Thing",
+                        action: function (e, column) {
+                            //do another thing
+                        }
+                    },
+                ]
+            }
+        ]
+    }
+];
+
+// Reference: 
+//  Tabulator. How to enable and disable editing from js
+//  https://stackoverflow.com/questions/55249047/tabulator-how-to-enable-and-disable-editing-from-js
+const editCheck = function (cell) {
+    var isEditable = cell.getElement().classList.contains('isEditable');
+    return isEditable;
+}
+
 const DATAGRID_CONFIG = {
     requiredProps: ['name', 'Weight', 'Comments', 'Shipping_Status'], // Default settings for which properties should be requested for each object
     groupBy: 'level', // Optional column to group by
@@ -25,7 +70,7 @@ const DATAGRID_CONFIG = {
         { title: 'Name', field: 'name', width: 150 },
         { title: 'Picco Number', field: 'comments', sorter: piccoNumSorter }, // comments sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
         { title: 'Weight', field: 'weight' },
-        { title: 'Shipping Status', field: 'shipping_status' }
+        { title: 'Shipping Status', field: 'shipping_status', editor: 'input', editable: editCheck }
     ],
 };
 
@@ -66,7 +111,9 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         this.addButton("Set Filter", "set-filter", this.defineAdvancedFilter.bind(this));
 
         // TODO: implement callback functions
-        this.addButton("Edit Table", "edit-table");
+        this.addButton("Edit Table", "edit-table", this.enableEdit.bind(this));
+
+        this.addButton("Regard Changes", "regard-changes");
 
         this.addButton("Save Table", "save-table");
     }
@@ -91,7 +138,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                                 <option value="volume" ${paramSet.param === "volume" ? "selected" : ""}>Volume</option>
                                 <option value="weight" ${paramSet.param === "weight" ? "selected" : ""}>Weight</option>
                                 <option value="cavity" ${paramSet.param === "cavity" ? "selected" : ""}>Cavity</option>
-                                <option value="comments" ${paramSet.param === "comments" ? "selected" : ""}>Comments</option>
+                                <option value="comments" ${paramSet.param === "comments" ? "selected" : ""}>Picco Number</option>
                                 <option value="shipping_status" ${paramSet.param === "shipping_status" ? "selected" : ""}>Shipping Status</option>
                             </select>
                         </div>
@@ -284,6 +331,20 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         });
     }
 
+    // Enable editing of the whole tabulator table
+    enableEdit() {
+        const elements = this.content.getElementsByClassName("tabulator-cell");
+        if (!elements.length) {
+            console.warn("Tabulator table not found.");
+            return;
+        }
+
+        // Loop through all tabulator tables
+        Array.from(elements).forEach(element => {
+            element.classList.add("isEditable");
+        });
+    }
+
     addButton(label, usage, callback) {
         // Create the button
         const button = document.createElement('button');
@@ -326,6 +387,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         buttonContainer.appendChild(button);
     }
 
+    // Recreate the table with updated data from DATAGRID_DATA
     updateTable() {
         this.table?.destroy();
 
@@ -340,7 +402,8 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             // pagination: "local",
             // paginationAddRow: "table",
             groupBy: DATAGRID_CONFIG.groupBy,
-            rowClick: (e, row) => DATAGRID_CONFIG.onRowClick(row.getData(), this.extension.viewer)
+            rowClick: (e, row) => DATAGRID_CONFIG.onRowClick(row.getData(), this.extension.viewer),
+            rowContextMenu: rowMenu
         });
     }
 
