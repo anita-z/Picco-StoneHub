@@ -341,12 +341,13 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             return;
         }
 
-        // Loop through all tabulator tables
+        // Loop through all .tabulator-cell elements
         Array.from(elements).forEach(element => {
             element.classList.add("isEditable");
         });
     }
 
+    // Regard the current changes of the tabulator table
     regardChanges() {
         if (!this.editing) return;
 
@@ -357,6 +358,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         this.table.clearCellEdited();
     }
 
+    // Synchronize the changes of table data to firestore
     async saveTable() {
         if (!this.editing) return;
 
@@ -367,6 +369,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
         if (editedCells.length === 0) return;
 
+        // TODO: need to handle combined models
         const model_urn = this.extension.viewer.model.getData().urn;
 
         const updates = editedCells.map(cell => {
@@ -390,6 +393,20 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         });
 
         await Promise.all(updates);
+
+        // Disable editing after saving the changes
+        const elements = this.content.getElementsByClassName("tabulator-cell");
+        if (!elements.length) {
+            console.warn("Tabulator table not found.");
+            return;
+        }
+
+        // Loop through all .tabulator-cell elements
+        Array.from(elements).forEach(element => {
+            element.classList.remove("isEditable");
+        });
+
+        this.table.clearCellEdited();
     }
 
     addButton(label, usage, callback) {
