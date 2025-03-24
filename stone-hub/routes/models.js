@@ -3,6 +3,8 @@ const db = require('../db');
 
 let router = express.Router();
 
+// ******* Get model-related data *******
+
 router.get('/firebase/models', async (req, res) => {
     try {
         const models = await db.collection('models').get();
@@ -34,5 +36,32 @@ router.get('/firebase/models/:model_urn/elements/:element_id', async (req, res) 
         return res.status(500).send('Error reading Firestore "stone_elements" documents');
     }
 });
+
+// ******* Update stone elements data from datagrid extension*******
+
+router.post('/firebase/update/stone', async (req, res) => {
+
+    console.log("Received request:", req.body);
+
+    const { model_urn, dbid, field, value } = req.body;
+
+    try {
+        await db.collection('models')
+            .doc(model_urn)
+            .collection('stone_elements')
+            .doc(dbid.toString())
+            .set({ [field]: value ?? null }, { merge: true });
+
+        res.status(200).send({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({ error: "Failed to update." });
+    }
+});
+
+router.post('/ping', (req, res) => {
+    res.json({ pong: true });
+  });
+  
 
 module.exports = router;

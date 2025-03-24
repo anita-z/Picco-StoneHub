@@ -5,18 +5,18 @@
 //  2. Authenticate with admin privileges
 //    https://firebase.google.com/docs/database/admin/start#authenticate-with-admin-privileges
 
-var admin = require("firebase-admin");
+const admin = require("firebase-admin");
 // const serviceAccount = require("./serviceAccountKey.json");
 
 // Decode the Base64 string into a JSON object
-const { FIREBASE_CREDENTIALS } = require('./config.js');
-var serviceAccount = JSON.parse(Buffer.from(FIREBASE_CREDENTIALS, "base64").toString("utf-8"));
+const { FIREBASE_CREDENTIALS, DATABASE_URL } = require('./config.js');
+const serviceAccount = JSON.parse(Buffer.from(FIREBASE_CREDENTIALS, "base64").toString("utf-8"));
 
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: process.env.databaseURL
+  databaseURL: DATABASE_URL
 });
 
-var db = admin.firestore();
+const db = admin.firestore();
 module.exports = db;

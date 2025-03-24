@@ -1,4 +1,4 @@
-import { currentSelectedModels, piccoNumSorter, piccoNumFilter } from '../globals.js';
+import { currentSelectedModels, piccoNumSorter, piccoNumFilter, getJSON } from '../globals.js';
 
 let DATAGRID_DATA = [];
 
@@ -95,6 +95,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         this.content.style.backgroundColor = 'white';
         this.content.innerHTML = `<div class="datagrid-container" style="position: relative; height: 350px;"></div>`;
         this.container.appendChild(this.content);
+        this.editing = false; // flag for editing mode
 
         // See http://tabulator.info
         this.table = new Tabulator('.datagrid-container', {
@@ -113,9 +114,9 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         // TODO: implement callback functions
         this.addButton("Edit Table", "edit-table", this.enableEdit.bind(this));
 
-        this.addButton("Regard Changes", "regard-changes");
+        this.addButton("Regard Changes", "regard-changes", this.regardChanges.bind(this));
 
-        this.addButton("Save Table", "save-table");
+        this.addButton("Save Table", "save-table", this.saveTable.bind(this));
     }
 
     defineAdvancedFilter() {
@@ -333,6 +334,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
     // Enable editing of the whole tabulator table
     enableEdit() {
+        this.editing = true;
         const elements = this.content.getElementsByClassName("tabulator-cell");
         if (!elements.length) {
             console.warn("Tabulator table not found.");
@@ -343,6 +345,51 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         Array.from(elements).forEach(element => {
             element.classList.add("isEditable");
         });
+    }
+
+    regardChanges() {
+        if (!this.editing) return;
+
+        let editedCells = this.table.getEditedCells();
+        editedCells.forEach(cell => {
+            cell.restoreOldValue();
+        });
+        this.table.clearCellEdited();
+    }
+
+    async saveTable() {
+        if (!this.editing) return;
+
+        this.editing = false;
+
+        const editedCells = this.table.getEditedCells();
+        console.log("editedCells", editedCells);
+
+        if (editedCells.length === 0) return;
+
+        const model_urn = this.extension.viewer.model.getData().urn;
+
+        const updates = editedCells.map(cell => {
+            const field = cell.getField();
+            const value = cell.getValue();
+            const dbid = cell.getData().dbid;
+
+            if (!dbid || !field) return Promise.resolve(); // skip
+
+            return fetch('/firebase/update/stone', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ model_urn, dbid, field, value }),
+            })
+                .then(res => {
+                    if (!res.ok) return res.json().then(err => { throw err; });
+                })
+                .catch(err => {
+                    console.error(`Failed to update dbid ${dbid}:`, err);
+                });
+        });
+
+        await Promise.all(updates);
     }
 
     addButton(label, usage, callback) {
