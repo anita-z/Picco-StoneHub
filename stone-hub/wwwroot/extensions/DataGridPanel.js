@@ -1,4 +1,4 @@
-import { currentSelectedModels, piccoNumSorter, piccoNumFilter, getJSON } from '../globals.js';
+import { currentSelectedModels, piccoNumSorter, piccoNumFilter } from '../globals.js';
 
 let DATAGRID_DATA = [];
 
@@ -47,7 +47,12 @@ const editCheck = function (cell) {
     return isEditable;
 }
 
-const DATAGRID_CONFIG = {
+// TODO: store extra props and column definitons to firestore, ref cost analysis for fetching data
+
+// TODO: need to make sure default datagrid configuration constant
+
+// Default datagrid configuration
+let DATAGRID_CONFIG = {
     requiredProps: ['name', 'Weight', 'Comments', 'Shipping_Status'], // Default settings for which properties should be requested for each object
     groupBy: 'level', // Optional column to group by
     createRow: (dbid, name, props) => { // Function generating grid rows based on recieved object properties
@@ -111,12 +116,13 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
         this.addButton("Set Filter", "set-filter", this.defineAdvancedFilter.bind(this));
 
-        // TODO: implement callback functions
         this.addButton("Edit Table", "edit-table", this.enableEdit.bind(this));
 
         this.addButton("Regard Changes", "regard-changes", this.regardChanges.bind(this));
 
         this.addButton("Save Table", "save-table", this.saveTable.bind(this));
+
+        this.addButton("Add Column", "add-column", this.addColumn.bind(this));
     }
 
     defineAdvancedFilter() {
@@ -409,13 +415,51 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         this.table.clearCellEdited();
     }
 
+    // Create a new column to the table
+    async addColumn() {
+        const { value: columnTitle } = await Swal.fire({
+            title: "Enter the new column title",
+            input: "text",
+            showCancelButton: true,
+            inputValidator: (value) => {
+                if (!value) {
+                    return "Please enter the new column title";
+                }
+            }
+        });
+        if (columnTitle) {
+            const { snakeCase, titleCase } = this.normalizeString(columnTitle);
+            Swal.fire(`The new column title is ${titleCase},\n stored in array: ${snakeCase}`);
+            this.table.addColumn({ title: titleCase, field: snakeCase });
+
+            //TODO: need to fix this
+            DATAGRID_CONFIG.autoColumnsDefinitions.push({ title: titleCase, field: snakeCase, editor: 'adaptable', editable: editCheck });
+            this.table.redraw(true);
+        }
+    }
+
+    normalizeString(input) {
+        // Trim and convert to lowercase, then split on spaces, underscores, or hyphens
+        const words = input.trim().toLowerCase().split(/[\s_-]+/);
+
+        // Build snake_case
+        const snakeCase = words.join('_');
+
+        // Build Title Case
+        const titleCase = words.map(word =>
+            word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' ');
+
+        return { snakeCase, titleCase };
+    }
+
     addButton(label, usage, callback) {
         // Create the button
         const button = document.createElement('button');
         button.textContent = label;
         button.style.margin = '5px'; // button margin
-        button.style.padding = '10px 15px'; // Padding for balanced size
-        button.style.minWidth = '100px'; // Consistent button size
+        button.style.padding = '10px 10px'; // Padding for balanced size
+        button.style.minWidth = '60px'; // Consistent button size
         button.style.border = 'none'; // No border
         button.style.borderRadius = '5px'; // Rounded corners for a modern look
         button.style.backgroundColor = '#333'; // Grey button background
@@ -461,7 +505,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             autoColumnsDefinitions: DATAGRID_CONFIG.autoColumnsDefinitions,
             // height: '100%',
             minHeight: 500, //do not let table get smaller than 300 px heigh
-            layout: "fitDataStretch",
+            layout: "fitDataFill",
             // layout: 'fitColumns',
             // pagination: "local",
             // paginationAddRow: "table",
