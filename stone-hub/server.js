@@ -15,10 +15,10 @@ app.use(require('./routes/testCollection.js'));
 app.use(require('./routes/models.js'));
 app.use(require('./routes/connectionTypes.js'));
 
-app.use((req, res, next) => {
-  console.log(`📡 Incoming ${req.method} ${req.url}`);
-  next();
-});
+// app.use((req, res, next) => {
+//   console.log(`📡 Incoming ${req.method} ${req.url}`);
+//   next();
+// });
 
 // const listEndpoints = require('express-list-endpoints');
 // console.log(listEndpoints(app));

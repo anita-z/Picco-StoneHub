@@ -1,4 +1,4 @@
-import { currentSelectedModels, piccoNumSorter, piccoNumFilter } from '../globals.js';
+import { postJSON, currentSelectedModels, piccoNumSorter, piccoNumFilter } from '../globals.js';
 
 let DATAGRID_DATA = [];
 
@@ -52,7 +52,7 @@ const editCheck = function (cell) {
 // TODO: need to make sure default datagrid configuration constant
 
 // Default datagrid configuration
-let DATAGRID_CONFIG = {
+const DATAGRID_CONFIG = {
     requiredProps: ['name', 'Weight', 'Comments', 'Shipping_Status'], // Default settings for which properties should be requested for each object
     groupBy: 'level', // Optional column to group by
     createRow: (dbid, name, props) => { // Function generating grid rows based on recieved object properties
@@ -378,27 +378,30 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         // TODO: need to handle combined models
         const model_urn = this.extension.viewer.model.getData().urn;
 
-        const updates = editedCells.map(cell => {
+        const updates = editedCells.map(async cell => {
             const field = cell.getField();
             const value = cell.getValue();
             const dbid = cell.getData().dbid;
 
             if (!dbid || !field) return Promise.resolve(); // skip
 
-            return fetch('/firebase/update/stone', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ model_urn, dbid, field, value }),
-            })
-                .then(res => {
-                    if (!res.ok) return res.json().then(err => { throw err; });
-                })
-                .catch(err => {
-                    console.error(`Failed to update dbid ${dbid}:`, err);
-                });
+            try {
+                await postJSON('/firebase/update/stones/table/data', { model_urn, dbid, field, value, table_data_type: "datagrid_data" });
+            } catch (error) {
+                console.error("Failed to update cell: ", error);
+            }
+            // return fetch('/firebase/update/stone', {
+            //     method: 'POST',
+            //     headers: { 'Content-Type': 'application/json' },
+            //     body: JSON.stringify({ model_urn, dbid, field, value }),
+            // })
+            //     .then(res => {
+            //         if (!res.ok) return res.json().then(err => { throw err; });
+            //     })
+            //     .catch(err => {
+            //         console.error(`Failed to update dbid ${dbid}:`, err);
+            //     });
         });
-
-        await Promise.all(updates);
 
         // Disable editing after saving the changes
         const elements = this.content.getElementsByClassName("tabulator-cell");
@@ -413,6 +416,8 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         });
 
         this.table.clearCellEdited();
+
+        await Promise.all(updates);
     }
 
     // Create a new column to the table
@@ -430,11 +435,34 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         if (columnTitle) {
             const { snakeCase, titleCase } = this.normalizeString(columnTitle);
             Swal.fire(`The new column title is ${titleCase},\n stored in array: ${snakeCase}`);
-            this.table.addColumn({ title: titleCase, field: snakeCase });
 
-            //TODO: need to fix this
-            DATAGRID_CONFIG.autoColumnsDefinitions.push({ title: titleCase, field: snakeCase, editor: 'adaptable', editable: editCheck });
-            this.table.redraw(true);
+            const value = `{ title: ${titleCase}, field: ${snakeCase}, editor: true, editable: editCheck }`;
+
+            try {
+                this.table.addColumn({ title: titleCase, field: snakeCase, editor: true, editable: editCheck });
+
+                // Update the responding table config in firebase
+                const model_urn = this.extension.viewer.model.getData().urn;
+                await postJSON('/firebase/update/stones/table/config', { model_urn, value, table_config_type: "datagrid_config" });
+            } catch (error) {
+                console.error(`Failed to add new column ${titleCase}:`, error);
+            }
+
+            // this.table.addColumn({ title: titleCase, field: snakeCase, editor: true, editable: editCheck })
+            //     .then(function (column) {
+            //         //column - the component for the newly created column
+
+            //         //run code after column has been added
+            //         // this.table.redraw(true);
+            //     })
+            //     .catch(function (error) {
+            //         //handle error adding column
+            //         console.error(`Failed to add new column ${titleCase}:`, error);
+            //     });
+
+            // // Update the responding table config in firebase
+            // const model_urn = this.extension.viewer.model.getData().urn;
+            // await postJSON('/firebase/update/stones/table/config', { model_urn, value, table_config_type: "datagrid_config" });
         }
     }
 

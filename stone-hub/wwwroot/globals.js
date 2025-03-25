@@ -13,6 +13,21 @@ export async function getJSON(url) {
     return resp.json();
 }
 
+export async function postJSON(url, data) {
+    const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
+
+    if (!resp.ok) {
+        console.error("POST failed:", await resp.text());
+        throw new Error(`POST ${url} failed with status ${resp.status}`);
+    }
+    return resp.json();
+}
+
+
 // Helper function to extract numeric parts from Picco numbers (e.g., "P1-10" -> [1, 10])
 function parsePiccoNum(picco) {
     // Return a default value if the string is invalid

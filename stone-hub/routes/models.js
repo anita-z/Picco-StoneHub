@@ -1,5 +1,7 @@
 const express = require('express');
+const admin = require('firebase-admin');
 const db = require('../db');
+const FieldValue = admin.firestore.FieldValue;
 
 let router = express.Router();
 
@@ -37,20 +39,20 @@ router.get('/firebase/models/:model_urn/elements/:element_id', async (req, res) 
     }
 });
 
-// ******* Update stone elements data from datagrid extension*******
+// ******* Update stone elements data from table edits in extension*******
 
-router.post('/firebase/update/stone', async (req, res) => {
+router.post('/firebase/update/stones/table/data', async (req, res) => {
 
-    console.log("Received request:", req.body);
+    console.log("Received data update request:", req.body);
 
-    const { model_urn, dbid, field, value } = req.body;
+    const { model_urn, dbid, field, value, table_data_type } = req.body;
 
     try {
         await db.collection('models')
             .doc(model_urn)
             .collection('stone_elements')
             .doc(dbid.toString())
-            .set({ [field]: value ?? null }, { merge: true });
+            .set({ [table_data_type]: { [field]: value ?? null } }, { merge: true });
 
         res.status(200).send({ success: true });
     } catch (err) {
@@ -59,9 +61,27 @@ router.post('/firebase/update/stone', async (req, res) => {
     }
 });
 
-router.post('/ping', (req, res) => {
-    res.json({ pong: true });
-  });
-  
+router.post('/firebase/update/stones/table/config', async (req, res) => {
+
+    console.log("Received config update request:", req.body);
+
+    const { model_urn, value, table_config_type } = req.body;
+
+    try {
+        await db.collection('models')
+            .doc(model_urn)
+            .update({ [table_config_type]: FieldValue.arrayUnion(value) });
+
+        res.status(200).send({ success: true });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send({ error: "Failed to update." });
+    }
+});
+
+// router.post('/ping', (req, res) => {
+//     res.json({ pong: true });
+//   });
+
 
 module.exports = router;
