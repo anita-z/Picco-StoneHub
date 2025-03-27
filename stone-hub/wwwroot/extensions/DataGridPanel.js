@@ -1,4 +1,8 @@
-import { postJSON, currentSelectedModels, piccoNumSorter, piccoNumFilter } from '../globals.js';
+import {
+    postJSON, currentSelectedModels,
+    piccoNumSorter, piccoNumFilter, editCheck, normalizeString, createDefaultColumnDefinition,
+    modelCostAnalysisElementsDict
+} from '../globals.js';
 
 let DATAGRID_DATA = [];
 
@@ -39,13 +43,13 @@ let rowMenu = [
     }
 ];
 
-// Reference: 
-//  Tabulator. How to enable and disable editing from js
-//  https://stackoverflow.com/questions/55249047/tabulator-how-to-enable-and-disable-editing-from-js
-const editCheck = function (cell) {
-    var isEditable = cell.getElement().classList.contains('isEditable');
-    return isEditable;
-}
+// // Reference: 
+// //  Tabulator. How to enable and disable editing from js
+// //  https://stackoverflow.com/questions/55249047/tabulator-how-to-enable-and-disable-editing-from-js
+// const editCheck = function (cell) {
+//     var isEditable = cell.getElement().classList.contains('isEditable');
+//     return isEditable;
+// }
 
 // TODO: store extra props and column definitons to firestore, ref cost analysis for fetching data
 
@@ -433,17 +437,18 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             }
         });
         if (columnTitle) {
-            const { snakeCase, titleCase } = this.normalizeString(columnTitle);
+            const { snakeCase, titleCase } = normalizeString(columnTitle);
             Swal.fire(`The new column title is ${titleCase},\n stored in array: ${snakeCase}`);
 
-            const value = `{ title: ${titleCase}, field: ${snakeCase}, editor: true, editable: editCheck }`;
+            // const value = `{ title: ${titleCase}, field: ${snakeCase}, editor: true, editable: editCheck }`;
+            const value = createDefaultColumnDefinition({ title: titleCase, field: snakeCase });
 
             try {
                 this.table.addColumn({ title: titleCase, field: snakeCase, editor: true, editable: editCheck });
 
                 // Update the responding table config in firebase
                 const model_urn = this.extension.viewer.model.getData().urn;
-                await postJSON('/firebase/update/stones/table/config', { model_urn, value, table_config_type: "datagrid_config" });
+                await postJSON('/firebase/update/stones/table/column_definitions', { model_urn, value, table_type: "datagrid_table_column_definitions" });
             } catch (error) {
                 console.error(`Failed to add new column ${titleCase}:`, error);
             }
@@ -466,20 +471,20 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         }
     }
 
-    normalizeString(input) {
-        // Trim and convert to lowercase, then split on spaces, underscores, or hyphens
-        const words = input.trim().toLowerCase().split(/[\s_-]+/);
+    // normalizeString(input) {
+    //     // Trim and convert to lowercase, then split on spaces, underscores, or hyphens
+    //     const words = input.trim().toLowerCase().split(/[\s_-]+/);
 
-        // Build snake_case
-        const snakeCase = words.join('_');
+    //     // Build snake_case
+    //     const snakeCase = words.join('_');
 
-        // Build Title Case
-        const titleCase = words.map(word =>
-            word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' ');
+    //     // Build Title Case
+    //     const titleCase = words.map(word =>
+    //         word.charAt(0).toUpperCase() + word.slice(1)
+    //     ).join(' ');
 
-        return { snakeCase, titleCase };
-    }
+    //     return { snakeCase, titleCase };
+    // }
 
     addButton(label, usage, callback) {
         // Create the button
@@ -643,6 +648,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             modelPromise.then(() => {
                 console.log("Model processed. Updating table...");
                 console.log("singluar DATAGRID_DATA", DATAGRID_DATA);
+                console.log(modelCostAnalysisElementsDict);
                 this.updateTable();
             }).catch((err) => {
                 console.error("Error processing data:", err);
