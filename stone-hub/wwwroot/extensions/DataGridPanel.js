@@ -409,7 +409,11 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             if (!dbid || !field) return Promise.resolve(); // skip
 
             try {
+                // Update changes to firestore
                 await postJSON('/firebase/update/stones/table/data', { model_urn: this.model_urn, dbid, field, value, table_data_type: "datagrid_data" });
+
+                // Update changes to variables in memory
+                modelDatagridElementsDict[this.model_urn][dbid][field] = value;
             } catch (error) {
                 console.error("Failed to update cell: ", error);
             }
@@ -455,6 +459,10 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
                 // Update the responding table config in firebase
                 await postJSON('/firebase/update/stones/table/column_definitions', { model_urn: this.model_urn, value, table_type: "datagrid_table_column_definitions" });
+                
+                // Update the responding table config in variables in memory
+                modelDatagridColumnDefDict[this.model_urn].push(value);
+                modelDatagridAllFieldsDict[this.model_urn].add(snakeCase);
             } catch (error) {
                 console.error(`Failed to add new column ${titleCase}:`, error);
             }
