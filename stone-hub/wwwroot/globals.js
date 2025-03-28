@@ -113,24 +113,28 @@ export async function getConnectionTypeData() {
 }
 
 // These dictionaries store the relevant stone elements data of currentSelectedModels
-export let modelDatagridElementsDict = {};
-export let modelCostAnalysisElementsDict = {};
+export const modelDatagridElementsDict = {};
+export const modelCostAnalysisElementsDict = {};
+
+// Store all the unique fields that appear across all entries of datagrid stone elements data
+export const modelDatagridAllFieldsDict = {};
 
 export async function fetchStoneElements(model_urn) {
     let elementsDatagridDict = {};
     let elementsCostAnalysisDict = {};
+    let allFieldsDatagridSet = new Set();
 
     const elements = await getJSON(`/firebase/models/${model_urn}/elements`);
-    if (elements.length === 0) {
-        elementsDatagridDict = {};
-        elementsCostAnalysisDict = {};
-    } else {
+    if (elements.length != 0) {
         for (const element of elements) {
             // Process datagrid data
             const element_datagrid_data = element.datagrid_data;
             elementsDatagridDict[element.id] = {
                 ...element_datagrid_data
             };
+
+            // Collect field names while populating
+            Object.keys(element_datagrid_data).forEach(key => allFieldsDatagridSet.add(key));
 
             // Process cost analysis data
             const connectionTypesDict = await getConnectionTypeData();
@@ -149,20 +153,18 @@ export async function fetchStoneElements(model_urn) {
 
     modelDatagridElementsDict[model_urn] = elementsDatagridDict;
     modelCostAnalysisElementsDict[model_urn] = elementsCostAnalysisDict;
+    modelDatagridAllFieldsDict[model_urn] = allFieldsDatagridSet;
 }
 
-export let modelDatagridColumnDefDict = {};
-export let modelCostAnalysisColumnDefDict = {};
+export const modelDatagridColumnDefDict = {};
+export const modelCostAnalysisColumnDefDict = {};
 
 export async function fetchModelColumnDef(model_urn) {
     let columnDefDatagridArray = [];
     let columnDefCostAnalysisArray = [];
 
     const model = await getJSON(`/firebase/models/${model_urn}`);
-    if (model.length === 0) {
-        columnDefDatagridArray = [];
-        columnDefCostAnalysisArray = [];
-    } else {
+    if (model.length != 0) {
         // Process datagrid data
         columnDefDatagridArray = model.datagrid_table_column_definitions;
 
