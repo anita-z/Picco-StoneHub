@@ -63,13 +63,15 @@ let rowMenu = [
 ];
 
 const fetchedColumnDef = (model_urn) => {
-    return modelDatagridColumnDefDict[model_urn].map(col => {
-        return {
+    const colDefs = modelDatagridColumnDefDict[model_urn] || [];
+    return colDefs
+        .filter(col => col !== null && col !== undefined)
+        .map(col => ({
             ...col,
             editable: col.editable === 'editCheck' ? editCheck : col.editable
-        };
-    });
+        }));
 };
+
 
 // Default datagrid configuration
 const DATAGRID_CONFIG = {
@@ -89,12 +91,20 @@ const DATAGRID_CONFIG = {
     },
     autoColumns: "full",
     getAutoColumnsDefinitions: (model_urn) => { // Definition of individual grid columns (see https://tabulator.info/docs/6.3/columns#autocolumns for more details)
+        console.log("conlumn def", [
+            { title: 'ID', field: 'dbid' },
+            { title: 'Name', field: 'name', width: 150 },
+            { title: 'Picco Number', field: 'comments', sorter: piccoNumSorter }, // comments sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
+            { title: 'Weight', field: 'weight' },
+            ...(fetchedColumnDef(model_urn))
+        ]);
+        
         return [
             { title: 'ID', field: 'dbid' },
             { title: 'Name', field: 'name', width: 150 },
             { title: 'Picco Number', field: 'comments', sorter: piccoNumSorter }, // comments sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
             { title: 'Weight', field: 'weight' },
-            ...(fetchedColumnDef(model_urn) || [])
+            ...(fetchedColumnDef(model_urn))
         ]
     },
     mergePlaceholderRow: (model_urn) => {

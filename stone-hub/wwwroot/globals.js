@@ -1,12 +1,12 @@
 // Contain the following parameters for a model: 
 // itemName, version, modelURN, pattern(encoded urn)
 // NOTE: urn are stored using "/" as the delimiter before version number, use with cautions!!!
-export let currentSelectedModels = [];
+export const currentSelectedModels = [];
 
 export async function getJSON(url) {
     const resp = await fetch(url);
     if (!resp.ok) {
-        alert('Could not load tree data. See console for more details.');
+        alert('Could not load data. See console for more details.');
         console.error(await resp.text());
         return [];
     }
@@ -127,26 +127,35 @@ export async function fetchStoneElements(model_urn) {
     const elements = await getJSON(`/firebase/models/${model_urn}/elements`);
     if (elements.length != 0) {
         for (const element of elements) {
+            // Skip null/undefined elements
+            if (!element) continue;
+
             // Process datagrid data
             const element_datagrid_data = element.datagrid_data;
-            elementsDatagridDict[element.id] = {
-                ...element_datagrid_data
-            };
+            if (element_datagrid_data) {
+                elementsDatagridDict[element.id] = {
+                    ...element_datagrid_data
+                };
 
-            // Collect field names while populating
-            Object.keys(element_datagrid_data).forEach(key => allFieldsDatagridSet.add(key));
+                // Collect field names while populating
+                Object.keys(element_datagrid_data).forEach(key => allFieldsDatagridSet.add(key));
+            }
 
             // Process cost analysis data
             const connectionTypesDict = await getConnectionTypeData();
             const element_cost_analysis_data = element.cost_analysis_data;
 
-            if (element_cost_analysis_data.connection_type) {
-                elementsCostAnalysisDict[element.id] = {
-                    order_status: element_cost_analysis_data.order_status,
-                    connection_type: element_cost_analysis_data.connection_type,
-                    price: connectionTypesDict[element_cost_analysis_data.connection_type].price,
-                    order_link: connectionTypesDict[element_cost_analysis_data.connection_type].order_link,
-                };
+
+            if (element_cost_analysis_data?.connection_type) {
+                const connectionInfo = connectionTypesDict[element_cost_analysis_data.connection_type];
+                if (connectionInfo) {
+                    elementsCostAnalysisDict[element.id] = {
+                        order_status: element_cost_analysis_data.order_status,
+                        connection_type: element_cost_analysis_data.connection_type,
+                        price: connectionTypesDict[element_cost_analysis_data.connection_type].price,
+                        order_link: connectionTypesDict[element_cost_analysis_data.connection_type].order_link,
+                    };
+                }
             }
         }
     }
@@ -174,4 +183,10 @@ export async function fetchModelColumnDef(model_urn) {
 
     modelDatagridColumnDefDict[model_urn] = columnDefDatagridArray;
     modelCostAnalysisColumnDefDict[model_urn] = columnDefCostAnalysisArray;
+}
+
+export function clearDict(dict) {
+    for (const key in dict) {
+        delete dict[key];
+    }
 }

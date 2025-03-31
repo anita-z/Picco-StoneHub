@@ -1,4 +1,12 @@
-import { currentSelectedModels } from '../globals.js';
+import {
+    currentSelectedModels,
+    modelDatagridElementsDict,
+    modelCostAnalysisElementsDict,
+    modelDatagridAllFieldsDict,
+    modelDatagridColumnDefDict,
+    modelCostAnalysisColumnDefDict,
+    clearDict
+} from '../globals.js';
 
 // Checklist Panel Class
 export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
@@ -120,6 +128,13 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
                     if (result.isConfirmed) {
                         this.models.length = 0;
                         currentSelectedModels.length = 0;
+
+                        clearDict(modelDatagridElementsDict);
+                        clearDict(modelCostAnalysisElementsDict);
+                        clearDict(modelDatagridAllFieldsDict);
+                        clearDict(modelDatagridColumnDefDict);
+                        clearDict(modelCostAnalysisColumnDefDict);
+
                         this.update();
                     }
                 });
@@ -129,7 +144,6 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
                 const selectedModels = this.getSelectedModels();
                 this.loadSelectedModels(selectedModels);
             });
-
 
         } catch (err) {
             alert('Could not list models. See the console for more details.');
@@ -228,8 +242,6 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
             if (matchedModel) {
                 matchedModel.checkbox.checked = true;
             }
-
-            // console.log("model.getPropertyDb()", model.getPropertyDb());
         });
     }
 }
