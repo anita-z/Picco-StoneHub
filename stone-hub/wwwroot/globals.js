@@ -190,3 +190,18 @@ export function clearDict(dict) {
         delete dict[key];
     }
 }
+
+export function deduplicateColumnDef(columnsDefArray) {
+    const seen = new Set();
+    const unique = [];
+
+    for (const col of columnsDefArray) {
+        const key = JSON.stringify(col); // turn full object into a unique string
+        if (!seen.has(key)) {
+            seen.add(key);
+            unique.push(col);
+        }
+    }
+
+    return unique;
+}

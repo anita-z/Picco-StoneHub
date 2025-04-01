@@ -1,7 +1,8 @@
 import {
     postJSON, currentSelectedModels,
     piccoNumSorter, piccoNumFilter, editCheck, normalizeString, createDefaultColumnDefinition,
-    modelDatagridElementsDict, modelDatagridColumnDefDict, modelDatagridAllFieldsDict
+    modelDatagridElementsDict, modelDatagridColumnDefDict, modelDatagridAllFieldsDict,
+    deduplicateColumnDef
 } from '../globals.js';
 
 let DATAGRID_DATA = [];
@@ -90,25 +91,50 @@ const DATAGRID_CONFIG = {
         viewer.fitToView([row.dbid]);
     },
     autoColumns: "full",
-    getAutoColumnsDefinitions: (model_urn) => { // Definition of individual grid columns (see https://tabulator.info/docs/6.3/columns#autocolumns for more details)
-        console.log("conlumn def", [
-            { title: 'ID', field: 'dbid' },
-            { title: 'Name', field: 'name', width: 150 },
-            { title: 'Picco Number', field: 'comments', sorter: piccoNumSorter }, // comments sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
-            { title: 'Weight', field: 'weight' },
-            ...(fetchedColumnDef(model_urn))
-        ]);
-        
+    getAutoColumnsDefinitions: (urn_list) => { // Definition of individual grid columns (see https://tabulator.info/docs/6.3/columns#autocolumns for more details)
+        // console.log("conlumn def", [
+        //     { title: 'ID', field: 'dbid' },
+        //     { title: 'Name', field: 'name', width: 150 },
+        //     { title: 'Picco Number', field: 'comments', sorter: piccoNumSorter }, // comments sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
+        //     { title: 'Weight', field: 'weight' },
+        //     ...(fetchedColumnDef(model_urn))
+        // ]);
+
+        let allColumnDefs = [];
+
+        urn_list.forEach(model_urn => {
+            allColumnDefs = [
+                ...allColumnDefs,
+                ...(fetchedColumnDef(model_urn))
+            ];
+        })
+
+        console.log("all column defs", allColumnDefs);
+
+        console.log(deduplicateColumnDef(allColumnDefs));
+
         return [
             { title: 'ID', field: 'dbid' },
             { title: 'Name', field: 'name', width: 150 },
             { title: 'Picco Number', field: 'comments', sorter: piccoNumSorter }, // comments sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
             { title: 'Weight', field: 'weight' },
-            ...(fetchedColumnDef(model_urn))
+            ...(deduplicateColumnDef(allColumnDefs))
+            // ...(fetchedColumnDef(model_urn))
         ]
     },
-    mergePlaceholderRow: (model_urn) => {
-        const placeholderRow = getPlaceholderRow(modelDatagridAllFieldsDict[model_urn]);
+    mergePlaceholderRow: (urn_list) => {
+        const allFields = new Set();
+        urn_list.forEach(model_urn => {
+            modelDatagridAllFieldsDict[model_urn].forEach(field => {
+                allFields.add(field);
+            })
+            // for (const field of modelDatagridAllFieldsDict[model_urn]) {
+            //     allFields.add(field);
+            // }
+        })
+
+        // const placeholderRow = getPlaceholderRow(modelDatagridAllFieldsDict[model_urn]);
+        const placeholderRow = getPlaceholderRow(allFields);
         return [
             ...placeholderRow,
             ...DATAGRID_DATA
@@ -469,7 +495,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
                 // Update the responding table config in firebase
                 await postJSON('/firebase/update/stones/table/column_definitions', { model_urn: this.model_urn, value, table_type: "datagrid_table_column_definitions" });
-                
+
                 // Update the responding table config in variables in memory
                 modelDatagridColumnDefDict[this.model_urn].push(value);
                 modelDatagridAllFieldsDict[this.model_urn].add(snakeCase);
@@ -522,13 +548,34 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
     }
 
     // Recreate the table with updated data from merged DATAGRID_DATA
-    updateTable() {
+    updateTable(urn_list) {
         this.table?.destroy();
 
+        let table_data = [];
+        let table_column_def = [];
+
+        console.log(urn_list);
+
+        // if (combined && urn_list) {
+        //     urn_list.forEach(urn => {
+        //         table_data.push(...DATAGRID_CONFIG.mergePlaceholderRow(urn));
+        //         table_column_def.push(...DATAGRID_CONFIG.getAutoColumnsDefinitions(urn));
+        //     })
+        // } else {
+        //     table_data = DATAGRID_CONFIG.mergePlaceholderRow(this.model_urn);
+        //     table_column_def = DATAGRID_CONFIG.getAutoColumnsDefinitions(this.model_urn);
+        // }
+
+        table_data = DATAGRID_CONFIG.mergePlaceholderRow(urn_list);
+        table_column_def = DATAGRID_CONFIG.getAutoColumnsDefinitions(urn_list);
+
+        console.log("table data", table_data);
+        console.log("column ddef", table_column_def);
+
         this.table = new Tabulator(".datagrid-container", {
-            data: DATAGRID_CONFIG.mergePlaceholderRow(this.model_urn),
+            data: table_data,
             autoColumns: DATAGRID_CONFIG.autoColumns,
-            autoColumnsDefinitions: DATAGRID_CONFIG.getAutoColumnsDefinitions(this.model_urn),
+            autoColumnsDefinitions: table_column_def,
             // height: '100%',
             minHeight: 500, //do not let table get smaller than 300 px heigh
             layout: "fitDataFill",
@@ -554,6 +601,8 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         const loadedModels = this.extension.viewer.impl.modelQueue().getModels();
         console.log("loadedMOdels", loadedModels);
 
+        const urn_list = [];
+
         // TODO: need to apply combined data to all other extensions
 
         // TODO: need to add new feature to modelchecklist: unload all models, clear checklist
@@ -565,30 +614,35 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
             let retrieveData = new Promise(async (resolve, reject) => {
 
-                let elementsGrouping = {};
+                // let elementsGrouping = {};
                 let dataPromises = []; // Track all async tasks
 
                 for (const model of loadedModels) {
                     let dbids = await this.extension.findLeafNodes(model);
-                    const model_urn = model.getData().urn.replace(/_/g, "/");
-                    const entry = currentSelectedModels.find(entry => entry.modelURN === model_urn);
+                    const model_urn = model.getData().urn;
+                    const modified_model_urn = model_urn.replace(/_/g, "/");
+                    const entry = currentSelectedModels.find(entry => entry.modelURN === modified_model_urn);
                     const model_name = entry ? entry.itemName : null;
 
-                    dbids.forEach(dbid => {
-                        if (!elementsGrouping[dbid]) {
-                            elementsGrouping[dbid] = [];
-                        }
-                        if (!elementsGrouping[dbid].includes(model_name)) {
-                            elementsGrouping[dbid].push(model_name);
-                        }
-                    });
+                    urn_list.push(model_urn);
+
+                    // dbids.forEach(dbid => {
+                    //     if (!elementsGrouping[dbid]) {
+                    //         elementsGrouping[dbid] = [];
+                    //     }
+                    //     if (!elementsGrouping[dbid].includes(model_name)) {
+                    //         elementsGrouping[dbid].push(model_name);
+                    //     }
+                    // });
 
                     // Create a new promise for each getBulkProperties call
                     let modelPromise = new Promise((resolveModel, rejectModel) => {
                         model.getBulkProperties(dbids, { propFilter: DATAGRID_CONFIG.requiredProps },
                             (results) => {
                                 const modelData = results.map((result) =>
-                                    DATAGRID_CONFIG.createRow(result.dbId, result.name, result.properties));
+                                    DATAGRID_CONFIG.createRow(model_urn, result.dbId, result.name, result.properties));
+
+                                console.log(model_name);
 
                                 DATAGRID_DATA.push(...modelData);
                                 resolveModel(); // Mark this model as processed
@@ -612,7 +666,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             retrieveData.then(() => {
                 console.log("All models processed. Updating table...");
                 console.log("combined DATAGRID_DATA", DATAGRID_DATA);
-                this.updateTable();
+                this.updateTable(urn_list);
             }).catch((err) => {
                 console.error("Error processing data:", err);
             });
@@ -635,6 +689,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                             DATAGRID_CONFIG.createRow(this.model_urn, result.dbId, result.name, result.properties));
                         DATAGRID_DATA = modelData;
 
+                        urn_list.push(this.model_urn);
                         resolveModel(); // Mark this model as processed
                     },
                     (err) => {
@@ -648,7 +703,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             modelPromise.then(() => {
                 console.log("Model processed. Updating table...");
                 console.log("singluar DATAGRID_DATA", DATAGRID_DATA);
-                this.updateTable();
+                this.updateTable(urn_list);
             }).catch((err) => {
                 console.error("Error processing data:", err);
             });
