@@ -7,13 +7,17 @@ import {
 
 let DATAGRID_DATA = [];
 
-function getPlaceholderRow(allFields) {
+function getPlaceholderRow(allFields, combined) {
     const baseFields = {
         dbid: "placeholder",
         name: "placeholder",
         comments: "placeholder",
         weight: "placeholder"
     };
+
+    if (combined) {
+        baseFields.model_name = "placeholder";
+    }
 
     const dataRow = { ...baseFields };
 
@@ -77,13 +81,16 @@ const fetchedColumnDef = (model_urn) => {
 // Default datagrid configuration
 const DATAGRID_CONFIG = {
     requiredProps: ['name', 'Weight', 'Comments'], // Required properties from APS managed data
-    groupBy: 'level', // Column to group by for single model
-    createRow: (model_urn, dbid, name, props) => { // Function generating grid rows based on recieved object properties
+    // groupBy: 'level', // Column to group by for single model
+    createRow: (model_urn, dbid, name, props, model_name) => { // Function generating grid rows based on recieved object properties
         const comments = props.find(p => p.displayName === 'Comments')?.displayValue;
         const weightProp = props.find(p => p.displayName === 'Weight');
         const weight = weightProp ? weightProp.displayValue.toString() + weightProp.units : undefined;
         const fetchedColumnData = modelDatagridElementsDict[model_urn][dbid];
 
+        if (model_name) {
+            return { dbid, name, comments, weight, ...fetchedColumnData, model_name };
+        }
         return { dbid, name, comments, weight, ...fetchedColumnData };
     },
     onRowClick: (row, viewer) => {
@@ -91,7 +98,7 @@ const DATAGRID_CONFIG = {
         viewer.fitToView([row.dbid]);
     },
     autoColumns: "full",
-    getAutoColumnsDefinitions: (urn_list) => { // Definition of individual grid columns (see https://tabulator.info/docs/6.3/columns#autocolumns for more details)
+    getAutoColumnsDefinitions: (urn_list, combined = false) => { // Definition of individual grid columns (see https://tabulator.info/docs/6.3/columns#autocolumns for more details)
         // console.log("conlumn def", [
         //     { title: 'ID', field: 'dbid' },
         //     { title: 'Name', field: 'name', width: 150 },
@@ -113,16 +120,28 @@ const DATAGRID_CONFIG = {
 
         console.log(deduplicateColumnDef(allColumnDefs));
 
-        return [
+        const baseColumnDefs = [
             { title: 'ID', field: 'dbid' },
             { title: 'Name', field: 'name', width: 150 },
             { title: 'Picco Number', field: 'comments', sorter: piccoNumSorter }, // comments sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
-            { title: 'Weight', field: 'weight' },
+            { title: 'Weight', field: 'weight' }
+        ];
+
+        if (combined) {
+            baseColumnDefs.push({ title: 'Model Name', field: 'model_name', width: 100 });
+        }
+
+        return [
+            // { title: 'ID', field: 'dbid' },
+            // { title: 'Name', field: 'name', width: 150 },
+            // { title: 'Picco Number', field: 'comments', sorter: piccoNumSorter }, // comments sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
+            // { title: 'Weight', field: 'weight' },
+            ...baseColumnDefs,
             ...(deduplicateColumnDef(allColumnDefs))
             // ...(fetchedColumnDef(model_urn))
         ]
     },
-    mergePlaceholderRow: (urn_list) => {
+    mergePlaceholderRow: (urn_list, combined = false) => {
         const allFields = new Set();
         urn_list.forEach(model_urn => {
             modelDatagridAllFieldsDict[model_urn].forEach(field => {
@@ -134,7 +153,7 @@ const DATAGRID_CONFIG = {
         })
 
         // const placeholderRow = getPlaceholderRow(modelDatagridAllFieldsDict[model_urn]);
-        const placeholderRow = getPlaceholderRow(allFields);
+        const placeholderRow = getPlaceholderRow(allFields, combined);
         return [
             ...placeholderRow,
             ...DATAGRID_DATA
@@ -577,7 +596,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
     }
 
     // Recreate the table with updated data from merged DATAGRID_DATA
-    updateTable() {
+    updateTable(combined = false) {
         this.table?.destroy();
 
         let table_data = [];
@@ -595,8 +614,8 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         //     table_column_def = DATAGRID_CONFIG.getAutoColumnsDefinitions(this.model_urn);
         // }
 
-        table_data = DATAGRID_CONFIG.mergePlaceholderRow(this.urn_list);
-        table_column_def = DATAGRID_CONFIG.getAutoColumnsDefinitions(this.urn_list);
+        table_data = DATAGRID_CONFIG.mergePlaceholderRow(this.urn_list, combined);
+        table_column_def = DATAGRID_CONFIG.getAutoColumnsDefinitions(this.urn_list, combined);
 
         console.log("table data", table_data);
         console.log("column ddef", table_column_def);
@@ -611,7 +630,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             // layout: 'fitColumns',
             // pagination: "local",
             // paginationAddRow: "table",
-            groupBy: DATAGRID_CONFIG.groupBy,
+            groupBy: "model_name",
             rowClick: (e, row) => DATAGRID_CONFIG.onRowClick(row.getData(), this.extension.viewer),
             rowContextMenu: rowMenu,
             rowFormatter: function (row) {
@@ -669,9 +688,10 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                         model.getBulkProperties(dbids, { propFilter: DATAGRID_CONFIG.requiredProps },
                             (results) => {
                                 const modelData = results.map((result) =>
-                                    DATAGRID_CONFIG.createRow(model_urn, result.dbId, result.name, result.properties));
+                                    DATAGRID_CONFIG.createRow(model_urn, result.dbId, result.name, result.properties, model_name));
 
                                 console.log(model_name);
+                                // this.table.addColumn({ title: "Model Name", field: model_name, editor: false });
 
                                 DATAGRID_DATA.push(...modelData);
                                 resolveModel(); // Mark this model as processed
@@ -695,7 +715,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             retrieveData.then(() => {
                 console.log("All models processed. Updating table...");
                 console.log("combined DATAGRID_DATA", DATAGRID_DATA);
-                this.updateTable();
+                this.updateTable(true);
             }).catch((err) => {
                 console.error("Error processing data:", err);
             });
