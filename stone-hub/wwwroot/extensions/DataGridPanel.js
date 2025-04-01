@@ -456,7 +456,6 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         const editedCells = this.table.getEditedCells();
         if (editedCells.length === 0) return;
 
-        // TODO: need to handle combined models
         const updates = editedCells.map(async cell => {
             const field = cell.getField();
             const value = cell.getValue();
@@ -465,31 +464,66 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             if (!dbid || !field) return Promise.resolve(); // skip
 
             try {
-                this.urn_list.forEach(async model_urn => {
+                for (const model_urn of this.urn_list) {
+                    if (!modelDatagridElementsDict[model_urn][dbid]) { // this row doesnt belong to current processing model
+                        // modelDatagridElementsDict[model_urn][dbid] = {};
+                        continue;
+                    }
                     // Update changes to firestore
                     await postJSON('/firebase/update/stones/table/data', { model_urn, dbid, field, value, table_data_type: "datagrid_data" });
-
-                    // Update changes to variables in memory
-                    // modelDatagridElementsDict[model_urn][dbid][field] = value;
-
-                    // Initialize parent if needed
-                    // if (!modelDatagridElementsDict[model_urn]) {
-                    //     modelDatagridElementsDict[model_urn] = {};
-                    // }
-
-                    if (!modelDatagridElementsDict[model_urn][dbid]) {
-                        modelDatagridElementsDict[model_urn][dbid] = {};
-                    }
-
-                    // safely assign the field
+                    // Safely assign the field
                     modelDatagridElementsDict[model_urn][dbid][field] = value;
 
-                });
-                //     // Update changes to firestore
-                //     await postJSON('/firebase/update/stones/table/data', { model_urn: this.model_urn, dbid, field, value, table_data_type: "datagrid_data" });
 
-                //     // Update changes to variables in memory
-                //     modelDatagridElementsDict[this.model_urn][dbid][field] = value;
+                    // Iterate through existing column definitions, if not found, add new column of the field
+                    let matchingColDef;
+                    for (const colDef of modelDatagridColumnDefDict[model_urn]) {
+                        if (colDef.field === field) matchingColDef = colDef;
+                    }
+
+                    if (!matchingColDef) { // If no matching column definitions are found
+
+                        const { snakeCase, titleCase } = normalizeString(field);
+                        // Swal.fire(`The new column title is ${titleCase},\n stored in array: ${snakeCase}`);
+            
+                        const colDefValue = createDefaultColumnDefinition({ title: titleCase, field: snakeCase });
+            
+                        try {
+                            // this.table.addColumn({ title: titleCase, field: snakeCase, editor: true, editable: editCheck });
+            
+                            // this.urn_list.forEach(async model_urn => {
+                                // Update the responding table config in firebase
+                                await postJSON('/firebase/update/stones/table/column_definitions', { model_urn, value: colDefValue, table_type: "datagrid_table_column_definitions" });
+            
+                                // Update the responding table config in variables in memory
+                                modelDatagridColumnDefDict[model_urn].push(colDefValue);
+                                modelDatagridAllFieldsDict[model_urn].add(snakeCase);
+                            // });
+                            // // Update the responding table config in firebase
+                            // await postJSON('/firebase/update/stones/table/column_definitions', { model_urn: this.model_urn, value, table_type: "datagrid_table_column_definitions" });
+            
+                            // // Update the responding table config in variables in memory
+                            // modelDatagridColumnDefDict[this.model_urn].push(value);
+                            // modelDatagridAllFieldsDict[this.model_urn].add(snakeCase);
+                        } catch (error) {
+                            console.error(`Failed to add new column ${titleCase}:`, error);
+                        }
+
+                        // const { snakeCase, titleCase } = normalizeString(field);
+                        // // Swal.fire(`The new column title is ${titleCase},\n stored in array: ${snakeCase}`);
+
+                        // const colDefValue = createDefaultColumnDefinition({ title: titleCase, field: snakeCase });
+
+                        // console.log(colDefValue);
+                        // // this.table.addColumn({ title: titleCase, field: snakeCase, editor: true, editable: editCheck });
+                        // await postJSON('/firebase/update/stones/table/column_definitions', { model_urn, colDefValue, table_type: "datagrid_table_column_definitions" });
+
+                        // // Update the responding table config in variables in memory
+                        // modelDatagridColumnDefDict[model_urn].push(colDefValue);
+                        // modelDatagridAllFieldsDict[model_urn].add(field);
+                    }
+
+                }
             } catch (error) {
                 console.error("Failed to update cell: ", error);
             }
