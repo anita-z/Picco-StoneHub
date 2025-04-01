@@ -99,14 +99,6 @@ const DATAGRID_CONFIG = {
     },
     autoColumns: "full",
     getAutoColumnsDefinitions: (urn_list, combined = false) => { // Definition of individual grid columns (see https://tabulator.info/docs/6.3/columns#autocolumns for more details)
-        // console.log("conlumn def", [
-        //     { title: 'ID', field: 'dbid' },
-        //     { title: 'Name', field: 'name', width: 150 },
-        //     { title: 'Picco Number', field: 'comments', sorter: piccoNumSorter }, // comments sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
-        //     { title: 'Weight', field: 'weight' },
-        //     ...(fetchedColumnDef(model_urn))
-        // ]);
-
         let allColumnDefs = [];
 
         urn_list.forEach(model_urn => {
@@ -115,10 +107,6 @@ const DATAGRID_CONFIG = {
                 ...(fetchedColumnDef(model_urn))
             ];
         })
-
-        console.log("all column defs", allColumnDefs);
-
-        console.log(deduplicateColumnDef(allColumnDefs));
 
         const baseColumnDefs = [
             { title: 'ID', field: 'dbid' },
@@ -132,13 +120,8 @@ const DATAGRID_CONFIG = {
         }
 
         return [
-            // { title: 'ID', field: 'dbid' },
-            // { title: 'Name', field: 'name', width: 150 },
-            // { title: 'Picco Number', field: 'comments', sorter: piccoNumSorter }, // comments sorter designed specifically for Picco numbers, i.e. "P1-1", "P2-10"
-            // { title: 'Weight', field: 'weight' },
             ...baseColumnDefs,
             ...(deduplicateColumnDef(allColumnDefs))
-            // ...(fetchedColumnDef(model_urn))
         ]
     },
     mergePlaceholderRow: (urn_list, combined = false) => {
@@ -147,9 +130,6 @@ const DATAGRID_CONFIG = {
             modelDatagridAllFieldsDict[model_urn].forEach(field => {
                 allFields.add(field);
             })
-            // for (const field of modelDatagridAllFieldsDict[model_urn]) {
-            //     allFields.add(field);
-            // }
         })
 
         // const placeholderRow = getPlaceholderRow(modelDatagridAllFieldsDict[model_urn]);
@@ -465,8 +445,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
             try {
                 for (const model_urn of this.urn_list) {
-                    if (!modelDatagridElementsDict[model_urn][dbid]) { // this row doesnt belong to current processing model
-                        // modelDatagridElementsDict[model_urn][dbid] = {};
+                    if (!modelDatagridElementsDict[model_urn][dbid]) { // This row doesnt belong to current processing model
                         continue;
                     }
                     // Update changes to firestore
@@ -484,45 +463,19 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                     if (!matchingColDef) { // If no matching column definitions are found
 
                         const { snakeCase, titleCase } = normalizeString(field);
-                        // Swal.fire(`The new column title is ${titleCase},\n stored in array: ${snakeCase}`);
-            
                         const colDefValue = createDefaultColumnDefinition({ title: titleCase, field: snakeCase });
-            
+
                         try {
-                            // this.table.addColumn({ title: titleCase, field: snakeCase, editor: true, editable: editCheck });
-            
-                            // this.urn_list.forEach(async model_urn => {
-                                // Update the responding table config in firebase
-                                await postJSON('/firebase/update/stones/table/column_definitions', { model_urn, value: colDefValue, table_type: "datagrid_table_column_definitions" });
-            
-                                // Update the responding table config in variables in memory
-                                modelDatagridColumnDefDict[model_urn].push(colDefValue);
-                                modelDatagridAllFieldsDict[model_urn].add(snakeCase);
-                            // });
-                            // // Update the responding table config in firebase
-                            // await postJSON('/firebase/update/stones/table/column_definitions', { model_urn: this.model_urn, value, table_type: "datagrid_table_column_definitions" });
-            
-                            // // Update the responding table config in variables in memory
-                            // modelDatagridColumnDefDict[this.model_urn].push(value);
-                            // modelDatagridAllFieldsDict[this.model_urn].add(snakeCase);
+                            // Update the responding table config in firebase
+                            await postJSON('/firebase/update/stones/table/column_definitions', { model_urn, value: colDefValue, table_type: "datagrid_table_column_definitions" });
+
+                            // Update the responding table config in variables in memory
+                            modelDatagridColumnDefDict[model_urn].push(colDefValue);
+                            modelDatagridAllFieldsDict[model_urn].add(snakeCase);
                         } catch (error) {
                             console.error(`Failed to add new column ${titleCase}:`, error);
                         }
-
-                        // const { snakeCase, titleCase } = normalizeString(field);
-                        // // Swal.fire(`The new column title is ${titleCase},\n stored in array: ${snakeCase}`);
-
-                        // const colDefValue = createDefaultColumnDefinition({ title: titleCase, field: snakeCase });
-
-                        // console.log(colDefValue);
-                        // // this.table.addColumn({ title: titleCase, field: snakeCase, editor: true, editable: editCheck });
-                        // await postJSON('/firebase/update/stones/table/column_definitions', { model_urn, colDefValue, table_type: "datagrid_table_column_definitions" });
-
-                        // // Update the responding table config in variables in memory
-                        // modelDatagridColumnDefDict[model_urn].push(colDefValue);
-                        // modelDatagridAllFieldsDict[model_urn].add(field);
                     }
-
                 }
             } catch (error) {
                 console.error("Failed to update cell: ", error);
@@ -575,12 +528,6 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                     modelDatagridColumnDefDict[model_urn].push(value);
                     modelDatagridAllFieldsDict[model_urn].add(snakeCase);
                 });
-                // // Update the responding table config in firebase
-                // await postJSON('/firebase/update/stones/table/column_definitions', { model_urn: this.model_urn, value, table_type: "datagrid_table_column_definitions" });
-
-                // // Update the responding table config in variables in memory
-                // modelDatagridColumnDefDict[this.model_urn].push(value);
-                // modelDatagridAllFieldsDict[this.model_urn].add(snakeCase);
             } catch (error) {
                 console.error(`Failed to add new column ${titleCase}:`, error);
             }
@@ -633,26 +580,8 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
     updateTable(combined = false) {
         this.table?.destroy();
 
-        let table_data = [];
-        let table_column_def = [];
-
-        console.log(this.urn_list);
-
-        // if (combined && urn_list) {
-        //     urn_list.forEach(urn => {
-        //         table_data.push(...DATAGRID_CONFIG.mergePlaceholderRow(urn));
-        //         table_column_def.push(...DATAGRID_CONFIG.getAutoColumnsDefinitions(urn));
-        //     })
-        // } else {
-        //     table_data = DATAGRID_CONFIG.mergePlaceholderRow(this.model_urn);
-        //     table_column_def = DATAGRID_CONFIG.getAutoColumnsDefinitions(this.model_urn);
-        // }
-
-        table_data = DATAGRID_CONFIG.mergePlaceholderRow(this.urn_list, combined);
-        table_column_def = DATAGRID_CONFIG.getAutoColumnsDefinitions(this.urn_list, combined);
-
-        console.log("table data", table_data);
-        console.log("column ddef", table_column_def);
+        const table_data = DATAGRID_CONFIG.mergePlaceholderRow(this.urn_list, combined);
+        const table_column_def = DATAGRID_CONFIG.getAutoColumnsDefinitions(this.urn_list, combined);
 
         this.table = new Tabulator(".datagrid-container", {
             data: table_data,
@@ -669,7 +598,6 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             rowContextMenu: rowMenu,
             rowFormatter: function (row) {
                 const data = row.getData();
-
                 // Delete the row if it's the placeholder (by dbid)
                 if (data.dbid === "placeholder") {
                     // row.getElement().style.display = "none";
@@ -681,8 +609,6 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
     update(model, dbids) {
         const loadedModels = this.extension.viewer.impl.modelQueue().getModels();
-        console.log("loadedMOdels", loadedModels);
-
         this.urn_list = [];
 
         // TODO: need to apply combined data to all other extensions
@@ -708,24 +634,12 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
 
                     this.urn_list.push(model_urn);
 
-                    // dbids.forEach(dbid => {
-                    //     if (!elementsGrouping[dbid]) {
-                    //         elementsGrouping[dbid] = [];
-                    //     }
-                    //     if (!elementsGrouping[dbid].includes(model_name)) {
-                    //         elementsGrouping[dbid].push(model_name);
-                    //     }
-                    // });
-
                     // Create a new promise for each getBulkProperties call
                     let modelPromise = new Promise((resolveModel, rejectModel) => {
                         model.getBulkProperties(dbids, { propFilter: DATAGRID_CONFIG.requiredProps },
                             (results) => {
                                 const modelData = results.map((result) =>
                                     DATAGRID_CONFIG.createRow(model_urn, result.dbId, result.name, result.properties, model_name));
-
-                                console.log(model_name);
-                                // this.table.addColumn({ title: "Model Name", field: model_name, editor: false });
 
                                 DATAGRID_DATA.push(...modelData);
                                 resolveModel(); // Mark this model as processed
@@ -753,14 +667,6 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             }).catch((err) => {
                 console.error("Error processing data:", err);
             });
-
-            // TODO: need to update the groupby settings for combined data
-            // TODO: consider wrap element grouping inside promise as well
-            // this.table.setGroupBy([
-            //     // Combine model names for shared dbids
-            //     row => elementsGrouping[row.dbid]?.join(", ") || "Ungrouped"
-            // ]);
-
         } else {
             // Otherwise, clear the existing rows and update data for the current model
 
