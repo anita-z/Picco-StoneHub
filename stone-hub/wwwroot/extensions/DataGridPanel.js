@@ -152,6 +152,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         this.container.style.height = (options.height || 400) + 'px';
         this.container.style.resize = 'auto';
         this.container.style.backgroundColor = 'white';
+        this.urn_list = [this.extension.viewer.model.getData().urn];
         this.model_urn = this.extension.viewer.model.getData().urn;
     }
 
@@ -445,11 +446,31 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             if (!dbid || !field) return Promise.resolve(); // skip
 
             try {
-                // Update changes to firestore
-                await postJSON('/firebase/update/stones/table/data', { model_urn: this.model_urn, dbid, field, value, table_data_type: "datagrid_data" });
+                this.urn_list.forEach(async model_urn => {
+                    // Update changes to firestore
+                    await postJSON('/firebase/update/stones/table/data', { model_urn, dbid, field, value, table_data_type: "datagrid_data" });
 
-                // Update changes to variables in memory
-                modelDatagridElementsDict[this.model_urn][dbid][field] = value;
+                    // Update changes to variables in memory
+                    // modelDatagridElementsDict[model_urn][dbid][field] = value;
+
+                    // Initialize parent if needed
+                    // if (!modelDatagridElementsDict[model_urn]) {
+                    //     modelDatagridElementsDict[model_urn] = {};
+                    // }
+
+                    if (!modelDatagridElementsDict[model_urn][dbid]) {
+                        modelDatagridElementsDict[model_urn][dbid] = {};
+                    }
+
+                    // safely assign the field
+                    modelDatagridElementsDict[model_urn][dbid][field] = value;
+
+                });
+                //     // Update changes to firestore
+                //     await postJSON('/firebase/update/stones/table/data', { model_urn: this.model_urn, dbid, field, value, table_data_type: "datagrid_data" });
+
+                //     // Update changes to variables in memory
+                //     modelDatagridElementsDict[this.model_urn][dbid][field] = value;
             } catch (error) {
                 console.error("Failed to update cell: ", error);
             }
@@ -493,12 +514,20 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             try {
                 this.table.addColumn({ title: titleCase, field: snakeCase, editor: true, editable: editCheck });
 
-                // Update the responding table config in firebase
-                await postJSON('/firebase/update/stones/table/column_definitions', { model_urn: this.model_urn, value, table_type: "datagrid_table_column_definitions" });
+                this.urn_list.forEach(async model_urn => {
+                    // Update the responding table config in firebase
+                    await postJSON('/firebase/update/stones/table/column_definitions', { model_urn, value, table_type: "datagrid_table_column_definitions" });
 
-                // Update the responding table config in variables in memory
-                modelDatagridColumnDefDict[this.model_urn].push(value);
-                modelDatagridAllFieldsDict[this.model_urn].add(snakeCase);
+                    // Update the responding table config in variables in memory
+                    modelDatagridColumnDefDict[model_urn].push(value);
+                    modelDatagridAllFieldsDict[model_urn].add(snakeCase);
+                });
+                // // Update the responding table config in firebase
+                // await postJSON('/firebase/update/stones/table/column_definitions', { model_urn: this.model_urn, value, table_type: "datagrid_table_column_definitions" });
+
+                // // Update the responding table config in variables in memory
+                // modelDatagridColumnDefDict[this.model_urn].push(value);
+                // modelDatagridAllFieldsDict[this.model_urn].add(snakeCase);
             } catch (error) {
                 console.error(`Failed to add new column ${titleCase}:`, error);
             }
@@ -548,13 +577,13 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
     }
 
     // Recreate the table with updated data from merged DATAGRID_DATA
-    updateTable(urn_list) {
+    updateTable() {
         this.table?.destroy();
 
         let table_data = [];
         let table_column_def = [];
 
-        console.log(urn_list);
+        console.log(this.urn_list);
 
         // if (combined && urn_list) {
         //     urn_list.forEach(urn => {
@@ -566,8 +595,8 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         //     table_column_def = DATAGRID_CONFIG.getAutoColumnsDefinitions(this.model_urn);
         // }
 
-        table_data = DATAGRID_CONFIG.mergePlaceholderRow(urn_list);
-        table_column_def = DATAGRID_CONFIG.getAutoColumnsDefinitions(urn_list);
+        table_data = DATAGRID_CONFIG.mergePlaceholderRow(this.urn_list);
+        table_column_def = DATAGRID_CONFIG.getAutoColumnsDefinitions(this.urn_list);
 
         console.log("table data", table_data);
         console.log("column ddef", table_column_def);
@@ -601,7 +630,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
         const loadedModels = this.extension.viewer.impl.modelQueue().getModels();
         console.log("loadedMOdels", loadedModels);
 
-        const urn_list = [];
+        this.urn_list = [];
 
         // TODO: need to apply combined data to all other extensions
 
@@ -624,7 +653,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                     const entry = currentSelectedModels.find(entry => entry.modelURN === modified_model_urn);
                     const model_name = entry ? entry.itemName : null;
 
-                    urn_list.push(model_urn);
+                    this.urn_list.push(model_urn);
 
                     // dbids.forEach(dbid => {
                     //     if (!elementsGrouping[dbid]) {
@@ -666,7 +695,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             retrieveData.then(() => {
                 console.log("All models processed. Updating table...");
                 console.log("combined DATAGRID_DATA", DATAGRID_DATA);
-                this.updateTable(urn_list);
+                this.updateTable();
             }).catch((err) => {
                 console.error("Error processing data:", err);
             });
@@ -689,7 +718,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
                             DATAGRID_CONFIG.createRow(this.model_urn, result.dbId, result.name, result.properties));
                         DATAGRID_DATA = modelData;
 
-                        urn_list.push(this.model_urn);
+                        this.urn_list.push(this.model_urn);
                         resolveModel(); // Mark this model as processed
                     },
                     (err) => {
@@ -703,7 +732,7 @@ export class DataGridPanel extends Autodesk.Viewing.UI.DockingPanel {
             modelPromise.then(() => {
                 console.log("Model processed. Updating table...");
                 console.log("singluar DATAGRID_DATA", DATAGRID_DATA);
-                this.updateTable(urn_list);
+                this.updateTable();
             }).catch((err) => {
                 console.error("Error processing data:", err);
             });
