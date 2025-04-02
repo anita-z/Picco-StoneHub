@@ -1,8 +1,8 @@
 require('dotenv').config();
 
-let { APS_CLIENT_ID, APS_CLIENT_SECRET, SERVER_SESSION_SECRET, FIREBASE_CREDENTIALS } = process.env;
+let { APS_CLIENT_ID, APS_CLIENT_SECRET, SERVER_SESSION_SECRET, DATABASE_URL, FIREBASE_CREDENTIALS } = process.env;
 
-if (!APS_CLIENT_ID || !APS_CLIENT_SECRET || !SERVER_SESSION_SECRET || !FIREBASE_CREDENTIALS) {
+if (!APS_CLIENT_ID || !APS_CLIENT_SECRET || !SERVER_SESSION_SECRET || !DATABASE_URL || !FIREBASE_CREDENTIALS) {
     console.warn('Missing some of the required environment variables.');
     process.exit(1);
 }
@@ -29,6 +29,7 @@ module.exports = {
     APS_CLIENT_SECRET,
     APS_CALLBACK_URL,
     SERVER_SESSION_SECRET,
+    DATABASE_URL,
     FIREBASE_CREDENTIALS
     // PORT
 };

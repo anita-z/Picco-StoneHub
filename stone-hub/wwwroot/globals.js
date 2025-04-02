@@ -1,14 +1,28 @@
 // Contain the following parameters for a model: 
 // itemName, version, modelURN, pattern(encoded urn)
 // NOTE: urn are stored using "/" as the delimiter before version number, use with cautions!!!
-export let currentSelectedModels = [];
+export const currentSelectedModels = [];
 
 export async function getJSON(url) {
     const resp = await fetch(url);
     if (!resp.ok) {
-        alert('Could not load tree data. See console for more details.');
+        alert('Missing necessary data. See console for more details.');
         console.error(await resp.text());
         return [];
+    }
+    return resp.json();
+}
+
+export async function postJSON(url, data) {
+    const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+    });
+
+    if (!resp.ok) {
+        console.error("POST failed:", await resp.text());
+        throw new Error(`POST ${url} failed with status ${resp.status}`);
     }
     return resp.json();
 }
@@ -51,9 +65,37 @@ export function piccoNumFilter(data, filterParams) {
     return false;
 }
 
+// Reference: 
+//  Tabulator. How to enable and disable editing from js
+//  https://stackoverflow.com/questions/55249047/tabulator-how-to-enable-and-disable-editing-from-js
+export const editCheck = function (cell) {
+    var isEditable = cell.getElement().classList.contains('isEditable');
+    return isEditable;
+}
+
+export function normalizeString(input) {
+    // Trim and convert to lowercase, then split on spaces, underscores, or hyphens
+    const words = input.trim().toLowerCase().split(/[\s_-]+/);
+
+    // Build snake_case
+    const snakeCase = words.join('_');
+
+    // Build Title Case
+    const titleCase = words.map(word =>
+        word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+
+    return { snakeCase, titleCase };
+}
+
+export function createDefaultColumnDefinition({ title, field, editor = true, editable = 'editCheck' }) {
+    return { title, field, editor, editable };
+}
+
 // Stores cached connection types
 const connectionTypesDict = {};
 
+// TODO: dont need to export this function once adpat changes to cost analysis extension
 export async function getConnectionTypeData() {
     if (Object.keys(connectionTypesDict).length !== 0) {
         return connectionTypesDict;
@@ -70,4 +112,96 @@ export async function getConnectionTypeData() {
     }
 }
 
-export let modelDataDict = {};
+// These dictionaries store the relevant stone elements data of currentSelectedModels
+export const modelDatagridElementsDict = {};
+export const modelCostAnalysisElementsDict = {};
+
+// Store all the unique fields that appear across all entries of datagrid stone elements data
+export const modelDatagridAllFieldsDict = {};
+
+export async function fetchStoneElements(model_urn) {
+    let elementsDatagridDict = {};
+    let elementsCostAnalysisDict = {};
+    let allFieldsDatagridSet = new Set();
+
+    const elements = await getJSON(`/firebase/models/${model_urn}/elements`);
+    if (elements.length != 0) {
+        for (const element of elements) {
+            // Skip null/undefined elements
+            if (!element) continue;
+
+            // Process datagrid data
+            const element_datagrid_data = element.datagrid_data;
+            if (element_datagrid_data) {
+                elementsDatagridDict[element.id] = {
+                    ...element_datagrid_data
+                };
+
+                // Collect field names while populating
+                Object.keys(element_datagrid_data).forEach(key => allFieldsDatagridSet.add(key));
+            }
+
+            // Process cost analysis data
+            const connectionTypesDict = await getConnectionTypeData();
+            const element_cost_analysis_data = element.cost_analysis_data;
+
+
+            if (element_cost_analysis_data?.connection_type) {
+                const connectionInfo = connectionTypesDict[element_cost_analysis_data.connection_type];
+                if (connectionInfo) {
+                    elementsCostAnalysisDict[element.id] = {
+                        order_status: element_cost_analysis_data.order_status,
+                        connection_type: element_cost_analysis_data.connection_type,
+                        price: connectionTypesDict[element_cost_analysis_data.connection_type].price,
+                        order_link: connectionTypesDict[element_cost_analysis_data.connection_type].order_link,
+                    };
+                }
+            }
+        }
+    }
+
+    modelDatagridElementsDict[model_urn] = elementsDatagridDict;
+    modelCostAnalysisElementsDict[model_urn] = elementsCostAnalysisDict;
+    modelDatagridAllFieldsDict[model_urn] = allFieldsDatagridSet;
+}
+
+export const modelDatagridColumnDefDict = {};
+export const modelCostAnalysisColumnDefDict = {};
+
+export async function fetchModelColumnDef(model_urn) {
+    let columnDefDatagridArray = [];
+    let columnDefCostAnalysisArray = [];
+
+    const model = await getJSON(`/firebase/models/${model_urn}`);
+    if (model.length != 0) {
+        // Process datagrid data
+        columnDefDatagridArray = model.datagrid_table_column_definitions;
+
+        // Process cost analysis data
+        columnDefCostAnalysisArray = model.cost_analysis_table_column_definitions;
+    }
+
+    modelDatagridColumnDefDict[model_urn] = columnDefDatagridArray;
+    modelCostAnalysisColumnDefDict[model_urn] = columnDefCostAnalysisArray;
+}
+
+export function clearDict(dict) {
+    for (const key in dict) {
+        delete dict[key];
+    }
+}
+
+export function deduplicateColumnDef(columnsDefArray) {
+    const seen = new Set();
+    const unique = [];
+
+    for (const col of columnsDefArray) {
+        const key = JSON.stringify(col); // turn full object into a unique string
+        if (!seen.has(key)) {
+            seen.add(key);
+            unique.push(col);
+        }
+    }
+
+    return unique;
+}

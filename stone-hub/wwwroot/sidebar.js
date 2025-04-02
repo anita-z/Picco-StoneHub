@@ -1,4 +1,8 @@
-import { currentSelectedModels, getJSON } from './globals.js';
+import {
+    currentSelectedModels, getJSON,
+    fetchStoneElements, modelDatagridElementsDict, modelCostAnalysisElementsDict,
+    fetchModelColumnDef, modelDatagridColumnDefDict, modelCostAnalysisColumnDefDict
+} from './globals.js';
 
 function createTreeNode(id, text, icon, children = false) {
     return { id, text, children, itree: { icon } };
@@ -48,11 +52,11 @@ export function initTree(selector, onSelectionChanged) {
             }
         }
     });
-    tree.on('node.click', function (event, node) {
+    tree.on('node.click', async function (event, node) {
         event.preventTreeDefault();
         const tokens = node.id.split('|');
         if (tokens[0] === 'version') {
-            console.log(tokens[1]);
+            // console.log(tokens[1]);
             // Extract the unique pattern for this model, i.e. everything between "vf." and "?version"
             const match = tokens[1].match(/vf\.(.*?)(?:\?|$)/);
             const pattern = match ? match[1] : null;
@@ -73,20 +77,25 @@ export function initTree(selector, onSelectionChanged) {
 
                 if (!exists) {
                     if (itemName && version) {
-                        currentSelectedModels.push({
-                            itemName,
-                            version,
-                            modelURN,
-                            pattern
-                        });
+                        currentSelectedModels.push({ itemName, version, modelURN, pattern });
                     } else {
                         console.error("Item name and version Info not found for this model.");
                     }
                 }
+
+                // Replace "/" with "_" to keep consistent with firestore
+                const modified_model_urn = modelURN.replace(/\//g, "_");
+                await fetchStoneElements(modified_model_urn);
+                await fetchModelColumnDef(modified_model_urn);
+
+                console.log("modelDatagridElementsDict", modelDatagridElementsDict);
+                console.log("modelCostAnalysisElementsDict", modelCostAnalysisElementsDict);
+
+                console.log("modelDatagridColumnDefDict", modelDatagridColumnDefDict);
+                console.log("modelCostAnalysisColumnDefDict", modelCostAnalysisColumnDefDict);
             } else {
                 console.error('Unique Pattern not found for this model.');
             }
-
             console.log(currentSelectedModels);
             onSelectionChanged(tokens[1]);
         }
