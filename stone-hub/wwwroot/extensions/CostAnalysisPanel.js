@@ -3,14 +3,14 @@ import {
     piccoNumSorter,
     getJSON,
     getConnectionTypeData,
-    modelDataDict,
+    modelCostAnalysisElementsDict,
 } from "../globals.js";
 
 async function getStoneElements(model_urn) {
     let elementsDict = {};
 
-    if (modelDataDict[model_urn]) {
-        return modelDataDict[model_urn];
+    if (modelCostAnalysisElementsDict[model_urn]) {
+        return modelCostAnalysisElementsDict[model_urn];
     } else {
         const elements = await getJSON(`/firebase/models/${model_urn}/elements`);
         if (elements.length === 0) {
@@ -29,7 +29,7 @@ async function getStoneElements(model_urn) {
                 }
             }
         }
-        modelDataDict[model_urn] = elementsDict;
+        modelCostAnalysisElementsDict[model_urn] = elementsDict;
         return elementsDict;
     }
 }
@@ -176,6 +176,7 @@ export class CostAnalysisPanel extends Autodesk.Viewing.UI.DockingPanel {
             ]);
         } else {
             const elementsDict = await getStoneElements(model.getData().urn);
+            console.log("elementsDict", elementsDict);
             model.getBulkProperties(dbids, { propFilter: COSTANALYSIS_CONFIG.requiredProps }, (results) => {
                 this.table.replaceData(results.map((result) =>
                     COSTANALYSIS_CONFIG.createRow(

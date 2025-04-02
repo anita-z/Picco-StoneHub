@@ -1,4 +1,12 @@
-import { currentSelectedModels } from '../globals.js';
+import {
+    currentSelectedModels,
+    modelDatagridElementsDict,
+    modelCostAnalysisElementsDict,
+    modelDatagridAllFieldsDict,
+    modelDatagridColumnDefDict,
+    modelCostAnalysisColumnDefDict,
+    clearDict
+} from '../globals.js';
 
 // Checklist Panel Class
 export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
@@ -25,6 +33,7 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
         this.checklistContainer = this.content.querySelector('.modelchecklist-container');
 
         this.models = [];
+        this.loadedModels = [];
         this.setupModelSelection();
     }
 
@@ -120,6 +129,13 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
                     if (result.isConfirmed) {
                         this.models.length = 0;
                         currentSelectedModels.length = 0;
+
+                        clearDict(modelDatagridElementsDict);
+                        clearDict(modelCostAnalysisElementsDict);
+                        clearDict(modelDatagridAllFieldsDict);
+                        clearDict(modelDatagridColumnDefDict);
+                        clearDict(modelCostAnalysisColumnDefDict);
+
                         this.update();
                     }
                 });
@@ -129,7 +145,6 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
                 const selectedModels = this.getSelectedModels();
                 this.loadSelectedModels(selectedModels);
             });
-
 
         } catch (err) {
             alert('Could not list models. See the console for more details.');
@@ -145,7 +160,7 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
                 const viewable = doc.getRoot().getDefaultGeometry();
                 const options = {
                     //  preserveView: true,
-                    keepCurrentModels: true
+                    // keepCurrentModels: true
                 };
                 if (xform) {
                     options.placementTransform = xform;
@@ -155,7 +170,7 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
                 }
                 viewer
                     .loadDocumentNode(doc, viewable, options)
-                    .then(resolve)
+                    .then(() => resolve({ doc, viewable }))
                     .catch(reject);
             }
             function onDocumentLoadFailure(code) {
@@ -174,17 +189,19 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
             // Referenced from:
             // StackOverflow post: Is there a way to unload a loaded model?
             // https://stackoverflow.com/questions/51700421/is-there-a-way-to-unload-a-loaded-model
-            // Get all loaded models
-            const loadedModels = this.extension.viewer.impl.modelQueue().getModels();
 
-            // Unload previous models
-            loadedModels.forEach(model => {
-                this.extension.viewer.impl.unloadModel(model);
-                console.log(`Unloaded model of id: ${model.id}`);
-            });
+            for (const model of this.loadedModels) {
+                if (model.viewable) {
+                    this.extension.viewer.unloadDocumentNode(model.viewable);
+                    console.log(`Unloaded viewable for URN: ${model.urn}`);
+                }
+            }
+
+            this.loadedModels = [];
 
             this.extension.viewer.impl.invalidate(true, true, true);
-            // this.extension.viewer.impl.modelQueue().clearModels();
+
+            console.log("Remaining models after unload:", this.extension.viewer.impl.modelQueue().getModels());
         } catch (err) {
             alert('Could not unload all models. See the console for more details.');
             console.error(err);
@@ -201,12 +218,19 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
                 )
             );
 
-            console.log(loadResults);
+            // Store loaded models (include URNs for reference)
+            this.loadedModels = selectedModels.map((model, index) => ({
+                urn: model.urn,
+                ...loadResults[index]
+            }));
+
+            console.log("Loaded Models:", this.loadedModels);
         } catch (err) {
             alert('Could not load models. See the console for more details.');
             console.error(err);
         }
     }
+
 
     update() {
         if (this.models.length === 0 && currentSelectedModels.length === 0) {
@@ -228,8 +252,6 @@ export class ModelChecklistPanel extends Autodesk.Viewing.UI.DockingPanel {
             if (matchedModel) {
                 matchedModel.checkbox.checked = true;
             }
-
-            // console.log("model.getPropertyDb()", model.getPropertyDb());
         });
     }
 }
