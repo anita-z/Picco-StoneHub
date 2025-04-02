@@ -6,7 +6,7 @@ export const currentSelectedModels = [];
 export async function getJSON(url) {
     const resp = await fetch(url);
     if (!resp.ok) {
-        alert('Could not load data. See console for more details.');
+        alert('Missing necessary data. See console for more details.');
         console.error(await resp.text());
         return [];
     }
