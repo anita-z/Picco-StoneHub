@@ -95,8 +95,7 @@ export function createDefaultColumnDefinition({ title, field, editor = true, edi
 // Stores cached connection types
 const connectionTypesDict = {};
 
-// TODO: dont need to export this function once adpat changes to cost analysis extension
-export async function getConnectionTypeData() {
+async function getConnectionTypeData() {
     if (Object.keys(connectionTypesDict).length !== 0) {
         return connectionTypesDict;
     } else {
@@ -118,11 +117,13 @@ export const modelCostAnalysisElementsDict = {};
 
 // Store all the unique fields that appear across all entries of datagrid stone elements data
 export const modelDatagridAllFieldsDict = {};
+export const modelCostAnalysisAllFieldsDict = {};
 
 export async function fetchStoneElements(model_urn) {
     let elementsDatagridDict = {};
     let elementsCostAnalysisDict = {};
     let allFieldsDatagridSet = new Set();
+    let allFieldsCostAnalysisSet = new Set();
 
     const elements = await getJSON(`/firebase/models/${model_urn}/elements`);
     if (elements.length != 0) {
@@ -149,12 +150,23 @@ export async function fetchStoneElements(model_urn) {
             if (element_cost_analysis_data?.connection_type) {
                 const connectionInfo = connectionTypesDict[element_cost_analysis_data.connection_type];
                 if (connectionInfo) {
+                    const { connection_type_ref, ...rest } = element_cost_analysis_data;
                     elementsCostAnalysisDict[element.id] = {
-                        order_status: element_cost_analysis_data.order_status,
-                        connection_type: element_cost_analysis_data.connection_type,
-                        price: connectionTypesDict[element_cost_analysis_data.connection_type].price,
-                        order_link: connectionTypesDict[element_cost_analysis_data.connection_type].order_link,
+                        ...rest,
+                        ...connectionInfo
+                        // order_status: element_cost_analysis_data.order_status,
+                        // connection_type: element_cost_analysis_data.connection_type,
+                        // price: connectionInfo.price,
+                        // order_link: connectionInfo.order_link,
                     };
+
+                    // Collect field names while populating
+                    Object.keys(element_cost_analysis_data).forEach(key => {
+                        if (key !== "connection_type_ref") {
+                            allFieldsCostAnalysisSet.add(key)
+                        }
+                    });
+                    Object.keys(connectionInfo).forEach(key => allFieldsCostAnalysisSet.add(key));
                 }
             }
         }
@@ -163,6 +175,7 @@ export async function fetchStoneElements(model_urn) {
     modelDatagridElementsDict[model_urn] = elementsDatagridDict;
     modelCostAnalysisElementsDict[model_urn] = elementsCostAnalysisDict;
     modelDatagridAllFieldsDict[model_urn] = allFieldsDatagridSet;
+    modelCostAnalysisAllFieldsDict[model_urn] = allFieldsCostAnalysisSet;
 }
 
 export const modelDatagridColumnDefDict = {};
